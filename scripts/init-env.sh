@@ -11,7 +11,6 @@ rand() { LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c "$1"; }
 sed -e "s/^PG_PASSWORD=.*/PG_PASSWORD=$(rand 24)/" \
     -e "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=$(rand 24)/" \
     -e "s/^HASHIDS_SALT=.*/HASHIDS_SALT=$(rand 40)/" \
-    -e "s/^MINIO_ROOT_PASSWORD=.*/MINIO_ROOT_PASSWORD=$(rand 24)/" \
     -e "s/^MEILI_MASTER_KEY=.*/MEILI_MASTER_KEY=$(rand 32)/" \
     .env.example > .env
 chmod 600 .env

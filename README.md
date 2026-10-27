@@ -13,7 +13,7 @@
 
 **支付**：微信 H5（微信外）、微信 JSAPI（微信内）、支付宝 H5。回调验签后同步入账（分布式锁 + 数据库重查保证幂等）；待支付订单定时向渠道回查；超时自动关单、自动确认收货；已取消订单收到回调、重复支付、金额不符进入差错池，后台人工处理。
 
-**其它**：订单与支付单都由状态机推进（跳转表是唯一真源，每次跳转写流水），数据库触发器兜底拦截绕过状态机的状态修改；文件存储默认本地目录，可切到 MinIO；商品搜索默认查数据库，可选 MeiliSearch。
+**其它**：订单与支付单都由状态机推进（跳转表是唯一真源，每次跳转写流水），数据库触发器兜底拦截绕过状态机的状态修改；文件存储默认本地目录，可切到 MinIO 或其它 S3 兼容对象存储；商品搜索默认查数据库，可选 MeiliSearch。
 
 ## 不包含 / 已知限制
 
@@ -82,9 +82,10 @@ docker compose up -d --build
 ### 可选组件
 
 ```bash
-docker compose --profile minio up -d     # MinIO 对象存储（后台「文件存储配置」里选 MinIO 并填写地址与密钥）
 docker compose --profile search up -d    # MeiliSearch 商品搜索（同时把 .env 里 MEILISEARCH_ENABLED 改成 true）
 ```
+
+对象存储不随 compose 提供：自备 MinIO 或其它 S3 兼容存储（如云厂商的对象存储），在后台「文件存储配置」里选「MinIO / S3」并填写地址与密钥。
 
 ### 常见问题
 
@@ -101,7 +102,7 @@ docker compose --profile search up -d    # MeiliSearch 商品搜索（同时把 
   在那边的 nginx 上把接口前缀反代到后端，保持页面与接口同域（H5 用 `/mallapi/`、`/files/`；管理后台的前缀见其 README）。
 - **上传的文件在哪**：本地存储时在后端容器的 `/app/data/uploads`（数据卷 `appdata`），经 `/files/**` 访问；
   支付证书在同一个卷的 `/app/data/home`。单个文件上限 100 MB（nginx 与后端一致）。
-  备份：`docker compose cp app:/app/data ./backup-data`。多台机器部署时改用 MinIO（后台「文件存储配置」）。
+  备份：`docker compose cp app:/app/data ./backup-data`。多台机器部署时改用自备的 MinIO / S3 兼容存储（后台「文件存储配置」）。
 - **页面打不开或接口 502**：`docker compose ps` 看各服务是否 `healthy`，后端第一次启动要建表，约需一两分钟；
   `docker compose logs app` 看后端报错。
 
@@ -159,7 +160,9 @@ zhiflow-arch-test   架构门禁（ArchUnit）
 
 ## 参与贡献
 
-目前暂不接受外部代码提交（Pull Request）。
+目前暂不接受外部代码提交（Pull Request），欢迎提 Issue。
+
+发现安全漏洞请不要公开提 Issue，按 [SECURITY.md](SECURITY.md) 私下报告。
 
 ## 许可证
 

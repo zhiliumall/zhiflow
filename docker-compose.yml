@@ -6,7 +6,7 @@
 #   docker compose logs app | grep -A4 首次启动   # 拿后台首登口令
 #
 # 打开 http://localhost/ 是 H5 用户端，http://localhost/admin/ 是管理后台（端口、域名、证书见 .env）。
-# 可选组件用 profile 开启：--profile minio（对象存储）、--profile search（MeiliSearch 商品搜索）。
+# 可选组件用 profile 开启：--profile search（MeiliSearch 商品搜索）。对象存储请自备 MinIO 或其它 S3 兼容存储，在后台「文件存储配置」里填写。
 
 name: zhiflow
 
@@ -118,20 +118,6 @@ services:
       # 放 fullchain.pem 与 privkey.pem 即启用 HTTPS
       - ${SSL_CERT_DIR:-./deploy/certs}:/etc/nginx/certs:ro
 
-  minio:
-    image: minio/minio:latest
-    profiles: ["minio"]
-    restart: unless-stopped
-    command: ["server", "/data", "--console-address", ":9001"]
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-zhiflow}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-}
-    ports:
-      - "${MINIO_PORT:-9000}:9000"
-      - "${MINIO_CONSOLE_PORT:-9001}:9001"
-    volumes:
-      - miniodata:/data
-
   meilisearch:
     image: getmeili/meilisearch:v1.15
     profiles: ["search"]
@@ -146,5 +132,4 @@ volumes:
   pgdata:
   valkeydata:
   appdata:
-  miniodata:
   meilidata:
