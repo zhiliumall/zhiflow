@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (C) 2025 gaipharma.com
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zhiflow.weixin.admin.mapper.WxAppMapper">
+
+	<resultMap id="wxAppMap" type="com.zhiflow.weixin.common.entity.WxApp">
+		<id property="id" column="id"/>
+		<result property="createId" column="create_id"/>
+		<result property="createTime" column="create_time"/>
+		<result property="updateId" column="update_id"/>
+		<result property="updateTime" column="update_time"/>
+		<result property="delFlag" column="del_flag"/>
+		<result property="tenantId" column="tenant_id"/>
+		<result property="appType" column="app_type"/>
+		<result property="secret" column="secret"/>
+		<result property="token" column="token"/>
+		<result property="aesKey" column="aes_key"/>
+		<result property="name" column="name"/>
+		<result property="logo" column="logo"/>
+		<result property="remarks" column="remarks"/>
+	</resultMap>
+
+	<sql id="wxAppSql">
+		  wa.id,
+		  wa.create_id,
+		  wa.create_time,
+		  wa.update_id,
+		  wa.update_time,
+		  wa.del_flag,
+		  wa.tenant_id,
+		  wa.app_type,
+		  wa.secret,
+		  wa.token,
+		  wa.aes_key,
+		  wa.name,
+		  wa.logo,
+		  wa.remarks
+	</sql>
+
+	<!--不需要租户信息约束的sql-->
+	<select id="findByAppId" resultMap="wxAppMap">
+		SELECT
+		<include refid="wxAppSql"/>
+		FROM
+		wx_app wa
+		WHERE wa.id = #{appId}
+	</select>
+</mapper>

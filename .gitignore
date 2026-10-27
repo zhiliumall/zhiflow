@@ -1,0 +1,47 @@
+### IDE ###
+.idea
+*.iws
+*.iml
+*.ipr
+.settings/
+.classpath
+.factorypath
+.project
+.springBeans
+.vscode/
+bin/
+
+### Maven ###
+target/
+dist/
+*.jar
+*.jar.original
+*.class
+*.war
+*.ear
+pom.xml.versionsBackup
+
+### 日志、临时文件 ###
+/logs/
+zhiflow-*/**/logs/
+*.log
+*.tmp
+*.cache
+*.diff
+*.patch
+__pycache__/
+
+### 系统 ###
+.DS_Store
+Thumbs.db
+node_modules
+
+### 本地配置与密钥（不要提交）###
+/deploy/certs/*
+!/deploy/certs/.gitkeep
+application-local.yml
+*.local.yml
+.env
+
+### 本地存储默认上传目录（zhiflow.storage.local.dir）###
+/data/

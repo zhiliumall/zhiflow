@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (C) 2025 gaipharma.com
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zhiflow.mall.api.mapper.GoodsSkuSpecValueMapper">
+
+	<resultMap id="goodsSkuSpecValueMap" type="com.zhiflow.mall.common.entity.GoodsSkuSpecValue">
+		<id property="id" column="id"/>
+		<result property="tenantId" column="tenant_id"/>
+		<result property="spuId" column="spu_id"/>
+		<result property="skuId" column="sku_id"/>
+		<result property="specValueId" column="spec_value_id"/>
+		<result property="createTime" column="create_time"/>
+		<result property="updateTime" column="update_time"/>
+		<result property="sort" column="sort"/>
+	</resultMap>
+
+	<resultMap id="goodsSkuSpecValueMap2" extends="goodsSkuSpecValueMap" type="com.zhiflow.mall.common.entity.GoodsSkuSpecValue">
+		<result property="specId" column="spec_id"/>
+		<result property="specValueName" column="spec_value_name"/>
+	</resultMap>
+
+	<resultMap id="specLeafMap" type="com.zhiflow.mall.common.entity.GoodsSkuSpecValue">
+		<result property="specId" column="spec_id"/>
+		<result property="specValueId" column="spec_value_id"/>
+		<result property="specValueName" column="spec_value_name"/>
+	</resultMap>
+
+	<sql id="goodsSkuSpecValueSql2">
+		ssv.id,
+		ssv.tenant_id,
+		ssv.spu_id,
+		ssv.sku_id,
+		ssv.spec_value_id,
+		ssv.create_time,
+		ssv.update_time,
+		ssv.sort,
+		gsv.spec_id,
+		gsv.name AS spec_value_name
+	</sql>
+
+	<select id="listGoodsSkuSpecValueBySkuIds" resultMap="goodsSkuSpecValueMap2">
+		SELECT
+		<include refid="goodsSkuSpecValueSql2"/>
+		FROM
+		goods_sku_spec_value ssv
+		LEFT JOIN goods_spec_value gsv
+		ON gsv.id = ssv.spec_value_id
+		WHERE ssv.sku_id IN
+		<foreach collection="skuIds" item="skuId" open="(" separator="," close=")">
+			#{skuId}
+		</foreach>
+		<!-- 手写 XML 不走 @TableLogic：软删的规格值关联要自己挡，否则编辑页回读→回传→重复落库 -->
+		AND ssv.del_flag = '0'
+		ORDER BY ssv.sort ASC
+	</select>
+
+	<!--
+		规格树各维度的取值，一个商品一条（原来每个维度一条 selectBySpecId）。
+		同一规格值被多个 SKU 用到只出一次；按它在 SKU 里第一次出现的位置排序（sort 是后台保存 SKU 规格值的顺序）。
+		gsv.spec_id 为空（规格值已不存在）的行原来就因 WHERE gsv.spec_id = ? 不出现，这里同样排除。
+	-->
+	<select id="listSpecLeafBySpuId" resultMap="specLeafMap">
+		SELECT
+		  gsv.spec_id,
+		  gsv.id AS spec_value_id,
+		  gsv.name AS spec_value_name
+		FROM
+			goods_sku_spec_value ssv
+			LEFT JOIN goods_spec_value gsv
+			  ON gsv.id = ssv.spec_value_id
+		  WHERE ssv.spu_id = #{spuId}
+		  AND ssv.del_flag = '0'
+		  AND gsv.spec_id IS NOT NULL
+		  GROUP BY gsv.spec_id, gsv.id, gsv.name
+		  ORDER BY MIN(ssv.sort) ASC
+	</select>
+</mapper>

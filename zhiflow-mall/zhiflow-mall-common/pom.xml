@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.zhiflow</groupId>
+		<artifactId>zhiflow-mall</artifactId>
+		<version>1.0.5</version>
+	</parent>
+
+	<artifactId>zhiflow-mall-common</artifactId>
+	<packaging>jar</packaging>
+
+	<description>商城公共模块</description>
+
+	<dependencies>
+		<!--core 工具类-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-weixin-common</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-upms-common</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-pay-common</artifactId>
+		</dependency>
+		<!--验证码-->
+		<dependency>
+			<groupId>cloud.tianai.captcha</groupId>
+			<artifactId>tianai-captcha-springboot-starter</artifactId>
+		</dependency>
+        <dependency>
+            <groupId>com.alibaba.fastjson2</groupId>
+            <artifactId>fastjson2</artifactId>
+            <scope>compile</scope>
+        </dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+    </dependencies>
+
+</project>

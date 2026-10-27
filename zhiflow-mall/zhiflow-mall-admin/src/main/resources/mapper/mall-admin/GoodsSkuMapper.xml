@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (C) 2025 gaipharma.com
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zhiflow.mall.admin.mapper.GoodsSkuMapper">
+
+	<resultMap id="goodsSkuMap" type="com.zhiflow.mall.common.entity.GoodsSku">
+		<id property="id" column="id"/>
+		<result property="createTime" column="create_time"/>
+		<result property="updateTime" column="update_time"/>
+		<result property="tenantId" column="tenant_id"/>
+		<result property="shopId" column="shop_id"/>
+		<result property="skuCode" column="sku_code"/>
+		<result property="spuId" column="spu_id"/>
+		<result property="picUrl" column="pic_url"  jdbcType="VARCHAR"/>
+		<result property="salesPrice" column="sales_price"/>
+		<result property="marketPrice" column="market_price"/>
+		<result property="costPrice" column="cost_price"/>
+		<result property="stock" column="stock"/>
+		<result property="weight" column="weight"/>
+		<result property="volume" column="volume"/>
+		<result property="delFlag" column="del_flag"/>
+		<result property="enable" column="enable"/>
+		<result property="version" column="version"/>
+	</resultMap>
+
+	<resultMap id="goodsSkuMap2" extends="goodsSkuMap" type="com.zhiflow.mall.common.entity.GoodsSku">
+		<collection property="specs" ofType="com.zhiflow.mall.common.entity.GoodsSkuSpecValue"
+					select="com.zhiflow.mall.admin.mapper.GoodsSkuSpecValueMapper.listGoodsSkuSpecValueBySku"
+					column="{skuId=id}">
+		</collection>
+	</resultMap>
+
+	<resultMap id="goodsSkuMap3" extends="goodsSkuMap" type="com.zhiflow.mall.common.entity.GoodsSku">
+		<collection property="goodsSpu" ofType="com.zhiflow.mall.common.entity.GoodsSpu"
+					select="com.zhiflow.mall.admin.mapper.GoodsSpuMapper.selectById"
+					column="{id=spu_id}">
+		</collection>
+	</resultMap>
+
+	<sql id="goodsSkuSql">
+		sku.id,
+		sku.create_time,
+		sku.update_time,
+		sku.tenant_id,
+		sku.shop_id,
+		sku.sku_code,
+		sku.spu_id,
+		sku.pic_url,
+		sku.sales_price,
+		sku.market_price,
+		sku.cost_price,
+		sku.stock,
+		sku.weight,
+		sku.volume,
+		sku.del_flag,
+		sku.enable,
+		sku.version
+	</sql>
+
+	<select id="getGoodsSkuById" resultMap="goodsSkuMap2">
+		SELECT
+		<include refid="goodsSkuSql"/>
+		FROM
+		goods_sku sku
+		WHERE sku.id = #{id}
+	</select>
+
+	<!--
+		手写 XML 不走 @TableLogic，必须自己带 del_flag 过滤。
+		漏了这一条的后果（2026-09-06 定位）：商品编辑页的详情接口把已软删的 sku 一并返回，
+		前端原样回传 → GoodsSpuServiceImpl.updateById1 里 saveOrUpdate 走 selectById 被
+		@TableLogic 追加 AND del_flag='0' 查不到 → 判「新增」→ 拿墓碑 id INSERT →
+		goods_sku_pkey 冲突 → 整个编辑事务回滚，报「商品规格数据冲突，请刷新页面后重新提交」。
+		租户 1 当时有 27 个在架商品带着 96 行 sku 墓碑，全部无法编辑。
+	-->
+	<select id="listGoodsSkuBySpuId" resultMap="goodsSkuMap2">
+		SELECT
+		<include refid="goodsSkuSql"/>
+		FROM
+		goods_sku sku
+		WHERE sku.spu_id = #{spuId}
+			AND sku.del_flag = '0'
+	</select>
+
+	<select id="selectOneByShoppingCart" resultMap="goodsSkuMap">
+		SELECT
+		<include refid="goodsSkuSql"/>
+		FROM
+		goods_sku sku
+		WHERE sku.enable = '1'
+			AND sku.id = #{id}
+	</select>
+
+	<select id="listSkuInOrderSub" resultMap="goodsSkuMap3">
+		<foreach item="item" collection="listPlaceOrderSkuDTO" separator="UNION ALL">
+			SELECT
+			<include refid="goodsSkuSql"/>
+			FROM
+			goods_sku sku
+			WHERE sku.enable = '1'
+			AND sku.shop_id = #{shopId}
+			AND sku.id = #{item.skuId}
+			AND sku.spu_id = #{item.spuId}
+			AND sku.stock >= #{item.quantity}
+		</foreach>
+	</select>
+</mapper>

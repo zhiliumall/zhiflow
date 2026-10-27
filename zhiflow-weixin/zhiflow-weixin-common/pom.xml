@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.zhiflow</groupId>
+		<artifactId>zhiflow-weixin</artifactId>
+		<version>1.0.5</version>
+	</parent>
+
+	<artifactId>zhiflow-weixin-common</artifactId>
+	<packaging>jar</packaging>
+
+	<description>微信公共模块</description>
+
+	<dependencies>
+		<!--core 工具类-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-core</artifactId>
+		</dependency>
+		<!--weixin-java-common-->
+		<dependency>
+			<groupId>com.github.binarywang</groupId>
+			<artifactId>weixin-java-common</artifactId>
+		</dependency>
+		<!--weixin-java-miniapp-->
+		<dependency>
+			<groupId>com.github.binarywang</groupId>
+			<artifactId>weixin-java-miniapp</artifactId>
+		</dependency>
+		<!--weixin-java-mp-->
+		<dependency>
+			<groupId>com.github.binarywang</groupId>
+			<artifactId>weixin-java-mp</artifactId>
+		</dependency>
+		<!--weixin-java-open-->
+		<dependency>
+			<groupId>com.github.binarywang</groupId>
+			<artifactId>weixin-java-open</artifactId>
+		</dependency>
+	</dependencies>
+
+</project>

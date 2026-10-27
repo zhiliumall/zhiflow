@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.zhiflow</groupId>
+		<artifactId>zhiflow-common</artifactId>
+		<version>1.0.5</version>
+	</parent>
+
+	<artifactId>zhiflow-common-storage</artifactId>
+	<packaging>jar</packaging>
+
+	<description>文件存储服务</description>
+
+	<dependencies>
+		<!--common-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-upms-common</artifactId>
+		</dependency>
+		<!--minio-->
+		<!-- 本地存储：把上传目录映射成静态资源（/files/**） -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-webmvc</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-autoconfigure</artifactId>
+		</dependency>
+		<!-- MinIO 客户端的公开 API 里用到 okhttp 类型（原先由已删的云存储 SDK 传递带进来）；版本由根 pom 的 okhttp-bom 统一 -->
+		<dependency>
+			<groupId>com.squareup.okhttp3</groupId>
+			<artifactId>okhttp-jvm</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.minio</groupId>
+			<artifactId>minio</artifactId>
+		</dependency>
+	</dependencies>
+</project>

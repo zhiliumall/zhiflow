@@ -1,0 +1,2 @@
+com.zhiflow.mall.admin.controller.GoodsSpuController.saveBatch(java.util.List) 是批量端点但返回类型不含 BatchResult
+com.zhiflow.mall.admin.controller.MallSystemConfigController.updateBatch(java.util.Map) 是批量端点但返回类型不含 BatchResult

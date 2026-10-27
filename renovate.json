@@ -1,0 +1,61 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "pinDigests": true,
+  "packageRules": [
+    {
+      "description": "Maven patch updates may open PRs; minor and major updates are report-only until separately reviewed.",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "prCreation": "immediate",
+      "automerge": false
+    },
+    {
+      "description": "Do not open Maven PRs for minor or major upgrades in this wave; keep them visible in dependency reporting.",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "major"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Docker patch updates may open PRs; never merge automatically.",
+      "matchManagers": [
+        "dockerfile",
+        "docker-compose"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "prCreation": "immediate",
+      "automerge": false
+    },
+    {
+      "description": "Docker major upgrades are disabled for the Java 25 base image policy.",
+      "matchManagers": [
+        "dockerfile",
+        "docker-compose"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Keep OkHttp on the line the MinIO client is built against (okhttp-bom in pom.xml).",
+      "matchPackageNames": [
+        "com.squareup.okhttp3:**"
+      ],
+      "enabled": false
+    }
+  ]
+}

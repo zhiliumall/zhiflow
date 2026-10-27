@@ -1,0 +1,50 @@
+# MyBatis-Plus SQL 重写契约黄金文件
+# 由 SqlRewriteContractTest 生成。不要手改 —— 要改就跑测试重新生成并 review diff。
+# 格式：用例名 | IN  => 输入SQL
+#       用例名 | OUT => 重写结果，或 THROWN: <异常类名>: <消息>
+
+=== TenantLineInnerInterceptor ===
+01-select-tenant-table | IN  => SELECT id, total FROM order_info WHERE del_flag = '0'
+01-select-tenant-table | OUT => SELECT id, total FROM order_info WHERE del_flag = '0' AND tenant_id = '1'
+02-select-NON-tenant-table-CONTROL | IN  => SELECT id FROM sys_config WHERE k = 'x'
+02-select-NON-tenant-table-CONTROL | OUT => SELECT id FROM sys_config WHERE k = 'x'
+03-join-two-tenant-tables | IN  => SELECT o.id, g.name FROM order_info o JOIN goods_spu g ON g.id = o.spu_id
+03-join-two-tenant-tables | OUT => SELECT o.id, g.name FROM order_info o JOIN goods_spu g ON g.id = o.spu_id AND g.tenant_id = '1' WHERE o.tenant_id = '1'
+04-subquery-in | IN  => SELECT id FROM order_info WHERE user_id IN (SELECT user_id FROM user_footprint WHERE del_flag = '0')
+04-subquery-in | OUT => SELECT id FROM order_info WHERE user_id IN (SELECT user_id FROM user_footprint WHERE del_flag = '0' AND tenant_id = '1') AND tenant_id = '1'
+05-pg-cast | IN  => SELECT id, (amount)::numeric(10,2) AS amt FROM order_info
+05-pg-cast | OUT => SELECT id, (amount)::numeric (10, 2) AS amt FROM order_info WHERE tenant_id = '1'
+06-pg-filter-where | IN  => SELECT count(*) FILTER (WHERE status = '1') AS paid, count(*) AS total FROM coupon_user
+06-pg-filter-where | OUT => SELECT count(*) FILTER (WHERE status = '1') AS paid, count(*) AS total FROM coupon_user WHERE tenant_id = '1'
+07-pg-lateral | IN  => SELECT o.id, x.n FROM order_info o, LATERAL (SELECT count(*) AS n FROM coupon_user c WHERE c.user_id = o.user_id) x
+07-pg-lateral | OUT => SELECT o.id, x.n FROM order_info o, LATERAL(SELECT count(*) AS n FROM coupon_user c WHERE c.user_id = o.user_id AND c.tenant_id = '1') x WHERE o.tenant_id = '1'
+08-pg-window-over | IN  => SELECT id, row_number() OVER (PARTITION BY user_id ORDER BY create_time DESC) AS rn FROM order_info
+08-pg-window-over | OUT => SELECT id, row_number() OVER (PARTITION BY user_id ORDER BY create_time DESC) AS rn FROM order_info WHERE tenant_id = '1'
+09-pg-jsonb-contains | IN  => SELECT id FROM goods_spu WHERE extended @> '{"a":1}'
+09-pg-jsonb-contains | OUT => SELECT id FROM goods_spu WHERE extended @> '{"a":1}' AND tenant_id = '1'
+10-pg-ilike | IN  => SELECT id FROM goods_spu WHERE name ILIKE '%vitamin%'
+10-pg-ilike | OUT => SELECT id FROM goods_spu WHERE name ILIKE '%vitamin%' AND tenant_id = '1'
+11-update | IN  => UPDATE order_info SET status = '2' WHERE id = 1
+11-update | OUT => UPDATE order_info SET status = '2' WHERE id = 1 AND tenant_id = '1'
+12-delete | IN  => DELETE FROM coupon_user WHERE id = 1
+12-delete | OUT => DELETE FROM coupon_user WHERE id = 1 AND tenant_id = '1'
+13-insert | IN  => INSERT INTO coupon_user (id, user_id) VALUES (1, 2)
+13-insert | OUT => INSERT INTO coupon_user (id, user_id, tenant_id) VALUES (1, 2, '1')
+14-pg-insert-on-conflict | IN  => INSERT INTO coupon_user (id, user_id) VALUES (1, 2) ON CONFLICT (id) DO NOTHING
+14-pg-insert-on-conflict | OUT => INSERT INTO coupon_user (id, user_id, tenant_id) VALUES (1, 2, '1') ON CONFLICT ( id ) DO NOTHING
+15-CTE-the-defect | IN  => WITH alive AS (SELECT user_id FROM user_footprint WHERE del_flag = '0') SELECT o.id FROM order_info o WHERE o.user_id IN (SELECT user_id FROM alive)
+15-CTE-the-defect | OUT => WITH alive AS (SELECT user_id FROM user_footprint WHERE del_flag = '0' AND tenant_id = '1') SELECT o.id FROM order_info o WHERE o.user_id IN (SELECT user_id FROM alive) AND o.tenant_id = '1'
+16-CTE-recursive | IN  => WITH RECURSIVE t AS (SELECT id, pid FROM goods_spu WHERE pid IS NULL UNION ALL SELECT g.id, g.pid FROM goods_spu g JOIN t ON g.pid = t.id) SELECT id FROM t
+16-CTE-recursive | OUT => WITH RECURSIVE t AS (SELECT id, pid FROM goods_spu WHERE pid IS NULL AND tenant_id = '1' UNION ALL SELECT g.id, g.pid FROM goods_spu g JOIN t ON g.pid = t.id WHERE g.tenant_id = '1') SELECT id FROM t
+
+=== PaginationInnerInterceptor.autoCountSql ===
+C1-simple | IN  => SELECT id, total FROM order_info WHERE del_flag = '0'
+C1-simple | OUT => SELECT COUNT(*) AS total FROM order_info WHERE del_flag = '0'
+C2-join | IN  => SELECT o.id FROM order_info o JOIN goods_spu g ON g.id = o.spu_id
+C2-join | OUT => SELECT COUNT(*) AS total FROM order_info o JOIN goods_spu g ON g.id = o.spu_id
+C3-order-by | IN  => SELECT id FROM order_info ORDER BY create_time DESC
+C3-order-by | OUT => SELECT COUNT(*) AS total FROM order_info
+C4-group-by | IN  => SELECT user_id, count(*) FROM order_info GROUP BY user_id
+C4-group-by | OUT => SELECT COUNT(*) FROM (SELECT user_id, count(*) FROM order_info GROUP BY user_id) TOTAL
+C5-CTE | IN  => WITH alive AS (SELECT user_id FROM user_footprint WHERE del_flag = '0') SELECT o.id FROM order_info o WHERE o.user_id IN (SELECT user_id FROM alive)
+C5-CTE | OUT => WITH alive AS (SELECT user_id FROM user_footprint WHERE del_flag = '0') SELECT COUNT(*) AS total FROM order_info o WHERE o.user_id IN (SELECT user_id FROM alive)

@@ -1,0 +1,66 @@
+<configuration debug="false" scan="false">
+	<springProperty scop="context" name="spring.application.name" source="spring.application.name" defaultValue=""/>
+	<property name="log.path" value="${LOG_PATH:-logs/auth}"/>
+	<!-- LOG_PATH 可按实例覆盖。多个实例共享同一个日志目录（例如挂载同一个宿主机目录）时，
+	     日志文件同名就会**两个 JVM 各自滚动同一个文件**：rename 只有一个能赢，
+	     输的那个继续往已被改名/删除的 inode 写 —— 一个实例的日志静默消失。
+	     不设 LOG_PATH 时为 logs/auth。 -->
+
+	<!-- 控制台输出  -->
+	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+		<!-- 文本（默认，与原来同形）或 ECS JSON：由环境变量 LOG_CONSOLE_FORMAT=text|ecs 切换，见 SwitchableConsoleEncoder。
+		     控制台由 Alloy 采进 Loki，所以只有控制台切 JSON；下面的文件日志保持文本。 -->
+		<encoder class="com.zhiflow.common.core.logging.SwitchableConsoleEncoder">
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{trace.id}] [%thread] %-5level %logger{36} -%msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<!--配置异步输出日志，提升性能-->
+	<appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+		<discardingThreshold>0</discardingThreshold>
+		<queueSize>1024</queueSize>
+		<neverBlock>true</neverBlock>
+		<appender-ref ref="console"/>
+	</appender>
+<!--本地info日志保存 ，不需要可以删除-->
+	<appender name="info" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${log.path}/system-info.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${log.path}/%d{yyyy-MM}/info.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+			<maxFileSize>50MB</maxFileSize>
+			<maxHistory>30</maxHistory>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{trace.id}] [%thread] %-5level %logger{36} -%msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<!-- 本地error日志保存 ，不需要可以删除 -->
+	<appender name="error" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${log.path}/system-error.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${log.path}/%d{yyyy-MM}/error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+			<maxFileSize>50MB</maxFileSize>
+			<maxHistory>30</maxHistory>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{trace.id}] [%thread] %-5level %logger{36} -%msg%n</pattern>
+		</encoder>
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<level>ERROR</level>
+		</filter>
+	</appender>
+
+
+
+	<root level="info">
+		<appender-ref ref="ASYNC"/>
+		<appender-ref ref="info"/>
+		<appender-ref ref="error"/>
+	</root>
+
+	<!-- 审计日志落库失败时的兜底文件（定义在 zhiflow-common-log）。
+	     未 include 时兜底内容会落进主日志，仍可查，只是不便单独采集与告警。 -->
+	<include resource="logback-audit-fallback.xml"/>
+
+</configuration>

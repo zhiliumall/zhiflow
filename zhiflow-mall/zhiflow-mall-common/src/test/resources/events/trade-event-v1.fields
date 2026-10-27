@@ -1,0 +1,20 @@
+# 标准交易事件 version=1 的字段快照（tag = eventType）。
+# 只加字段不删字段：这里的每一行（名字 + 类型）必须一直存在于 OrderTransitionedEvent。
+# 新加字段时把它追加到末尾；删 / 改名 / 改类型 = 破坏下游，先通知订阅方并升 version。
+eventId:String
+eventType:String
+version:int
+tenantId:String
+occurredAt:OffsetDateTime
+bizId:String
+orderNo:String
+payNo:String
+from:String
+to:String
+event:String
+ruleId:String
+operatorType:String
+operatorId:String
+amountMinor:Long
+currency:String
+traceId:String

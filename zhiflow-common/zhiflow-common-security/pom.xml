@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.zhiflow</groupId>
+		<artifactId>zhiflow-common</artifactId>
+		<version>1.0.5</version>
+	</parent>
+
+	<artifactId>zhiflow-common-security</artifactId>
+	<packaging>jar</packaging>
+
+	<description>安全工具类</description>
+
+
+	<dependencies>
+		<!-- Boot 4：oauth2-resource-server 不再传递 spring-security-config/web，HttpSecurity 等需显式引入 -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<!--工具类核心包-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-core</artifactId>
+		</dependency>
+		<!-- UPMS API 接口定义 (服务间调用接口) -->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-api-upms</artifactId>
+		</dependency>
+		<!-- UPMS Entity 和 DTO (运行时需要) -->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-upms-common</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-webmvc</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-oauth2-authorization-server</artifactId>
+		</dependency>
+
+		<!-- 本地缓存（RegisteredClient 不可序列化，用本地 Caffeine 替代 Redis 缓存） -->
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+</project>

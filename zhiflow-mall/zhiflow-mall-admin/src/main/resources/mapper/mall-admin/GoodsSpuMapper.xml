@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (C) 2025 gaipharma.com
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zhiflow.mall.admin.mapper.GoodsSpuMapper">
+	<resultMap id="goodsSpuMap" type="com.zhiflow.mall.common.entity.GoodsSpu">
+		<id property="id" column="id"/>
+		<result property="tenantId" column="tenant_id"/>
+		<result property="shopId" column="shop_id"/>
+		<result property="spuCode" column="spu_code"/>
+		<result property="name" column="name"/>
+		<result property="sellPoint" column="sell_point"/>
+		<result property="description" column="description"/>
+		<result property="categoryFirst" column="category_first"/>
+		<result property="categorySecond" column="category_second"/>
+		<result property="categoryThird" column="category_third"/>
+		<result property="videoUrl" column="video_url"/>
+		<result property="picUrls" column="pic_urls" typeHandler="com.zhiflow.common.core.mybatis.typehandler.ArrayStringTypeHandler" jdbcType="VARCHAR"/>
+		<result property="shelf" column="shelf"/>
+		<result property="sort" column="sort"/>
+		<result property="priceDown" column="price_down"/>
+		<result property="priceUp" column="price_up"/>
+		<result property="saleNum" column="sale_num"/>
+		<result property="createTime" column="create_time"/>
+		<result property="updateTime" column="update_time"/>
+		<result property="specType" column="spec_type"/>
+		<result property="delFlag" column="del_flag"/>
+		<result property="freightType" column="freight_type"/>
+		<result property="freightAmount" column="freight_amount"/>
+		<result property="verifyStatus" column="verify_status"/>
+		<result property="brandId" column="brand_id"/>
+		<result property="parameterJson" column="parameter_json"/>
+		<result property="stock" column="stock"/>
+		<result property="platform" column="platform" typeHandler="com.zhiflow.common.core.mybatis.typehandler.ArrayStringTypeHandler" jdbcType="VARCHAR"/>
+		<result property="viewNum" column="view_num"/>
+		<result property="stockWarnLine" column="stock_warn_line"/>
+	</resultMap>
+
+	<resultMap id="goodsSpuMap1" extends="goodsSpuMap" type="com.zhiflow.mall.common.entity.GoodsSpu">
+		<collection property="skus" ofType="com.zhiflow.mall.common.entity.GoodsSku"
+					select="com.zhiflow.mall.admin.mapper.GoodsSkuMapper.listGoodsSkuBySpuId"
+					column="{spuId=id}">
+		</collection>
+	</resultMap>
+
+	<sql id="goodsSpuSql">
+		goods_spu.id,
+		goods_spu.tenant_id,
+		goods_spu.shop_id,
+		goods_spu.spu_code,
+		goods_spu.name,
+		goods_spu.sell_point,
+		goods_spu.description,
+		goods_spu.category_first,
+		goods_spu.category_second,
+		goods_spu.category_third,
+		goods_spu.video_url,
+		goods_spu.pic_urls,
+		goods_spu.shelf,
+		goods_spu.sort,
+		goods_spu.price_down,
+		goods_spu.price_up,
+		goods_spu.sale_num,
+		goods_spu.create_time,
+		goods_spu.update_time,
+		goods_spu.spec_type,
+		goods_spu.del_flag,
+		goods_spu.freight_type,
+		goods_spu.freight_amount,
+		goods_spu.verify_status,
+		goods_spu.brand_id,
+		goods_spu.label,
+		goods_spu.parameter_json,
+		goods_spu.platform,
+		goods_spu.view_num,
+		goods_spu.stock_warn_line
+	</sql>
+
+	<sql id="goodsSpuSql2">
+        goods_spu.id,
+		goods_spu.tenant_id,
+		goods_spu.shop_id,
+		goods_spu.spu_code,
+		goods_spu.name,
+		goods_spu.sell_point,
+		null description,
+		goods_spu.category_first,
+		goods_spu.category_second,
+		goods_spu.category_third,
+		goods_spu.video_url,
+		goods_spu.pic_urls,
+		goods_spu.shelf,
+		goods_spu.sort,
+		goods_spu.price_down,
+		goods_spu.price_up,
+		goods_spu.sale_num,
+		goods_spu.create_time,
+		goods_spu.update_time,
+		goods_spu.spec_type,
+		goods_spu.del_flag,
+		goods_spu.freight_type,
+		goods_spu.freight_amount,
+		goods_spu.verify_status,
+		goods_spu.brand_id,
+		goods_spu.label,
+		goods_spu.parameter_json,
+		goods_spu.view_num,
+		goods_spu.stock_warn_line
+    </sql>
+
+	<!--
+	  库存聚合与预警筛选（V62）：
+	    · SPU 聚合库存 = sum(goods_sku.stock)，同一子查询下发两个别名：
+	        - stock       → resultMap 映射到 GoodsSpu.stock（既有口径，勿动）；
+	        - stock_total → 额外裸列，供 PC 端 ORDER BY stock_total 排序用（resultMap 不映射，无副作用）。
+	      背景：PC 前端按列名 stock_total 排序，而库中无此物化列，暴露别名即可让 ORDER BY 解析成功。
+	    · 库存预警筛选 query.stockWarning=true：PG 的 WHERE 不能引用 SELECT 别名，故重复子查询，
+	      与 COALESCE(goods_spu.stock_warn_line, 20) 比较；20 = stock_warn_line 未配置时的兜底预警线（见 V62）。
+	-->
+	<select id="selectPage1" resultMap="goodsSpuMap">
+		SELECT
+		goods_spu.*,
+		(SELECT sum(goods_sku.stock) FROM goods_sku goods_sku WHERE goods_sku.spu_id = goods_spu.id) AS stock,
+		(SELECT sum(goods_sku.stock) FROM goods_sku goods_sku WHERE goods_sku.spu_id = goods_spu.id) AS stock_total
+		FROM goods_spu goods_spu
+		<where>
+			<!--
+			  手写 XML 不吃 @TableLogic：S8 给 BaseEntity.delFlag 加了逻辑删注解，但那只对
+			  MyBatis-Plus 自己生成的 SQL 生效，本文件这类手写 select 一律要显式带条件，
+			  否则后台商品列表会把软删掉的商品一起列出来。
+			-->
+			AND goods_spu.del_flag = '0'
+			<if test="query.id != null">
+				AND goods_spu.id = #{query.id}
+			</if>
+			<if test="query.shopId != null">
+				AND goods_spu.shop_id = #{query.shopId}
+			</if>
+			<if test="query.shelf != null">
+				AND goods_spu.shelf = #{query.shelf}
+			</if>
+			<if test="query.verifyStatus != null">
+				AND goods_spu.verify_status = #{query.verifyStatus}
+			</if>
+			<if test="query.categoryFirst != null">
+				AND goods_spu.category_first = #{query.categoryFirst}
+			</if>
+			<if test="query.categorySecond != null">
+				AND goods_spu.category_second = #{query.categorySecond}
+			</if>
+			<if test="query.categoryThird != null">
+				AND goods_spu.category_third = #{query.categoryThird}
+			</if>
+			<if test="query.name != null">
+				AND goods_spu.name LIKE CONCAT('%',#{query.name},'%')
+			</if>
+			<if test="query.spuCode != null">
+				AND goods_spu.spu_code = #{query.spuCode}
+			</if>
+			<if test="query.specType != null">
+				AND goods_spu.spec_type = #{query.specType}
+			</if>
+			<if test="query.freightType != null">
+				AND goods_spu.freight_type = #{query.freightType}
+			</if>
+			<if test="query.brandId != null">
+				AND goods_spu.brand_id = #{query.brandId}
+			</if>
+			<if test="query.stockWarning != null and query.stockWarning">
+				AND (SELECT sum(gs.stock) FROM goods_sku gs WHERE gs.spu_id = goods_spu.id) &lt;= COALESCE(goods_spu.stock_warn_line, 20)
+			</if>
+		</where>
+	ORDER BY CASE WHEN goods_spu.verify_status = '0' THEN 0 ELSE 1 END
+	</select>
+
+	<select id="selectById1" resultMap="goodsSpuMap1">
+		SELECT
+		<include refid="goodsSpuSql"/>
+		FROM goods_spu goods_spu
+		WHERE goods_spu.id = #{id}
+	</select>
+
+	<select id="selectOneByShoppingCart" resultMap="goodsSpuMap">
+		SELECT
+			<include refid="goodsSpuSql2"/>
+		FROM goods_spu goods_spu
+		WHERE goods_spu.id = #{id}
+	</select>
+
+	<select id="selectById4" resultMap="goodsSpuMap">
+		SELECT
+		<include refid="goodsSpuSql"/>
+		FROM goods_spu goods_spu
+		WHERE goods_spu.id = #{id}
+	</select>
+</mapper>

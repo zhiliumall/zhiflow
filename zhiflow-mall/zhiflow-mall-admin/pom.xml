@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.zhiflow</groupId>
+		<artifactId>zhiflow-mall</artifactId>
+		<version>1.0.5</version>
+	</parent>
+
+	<artifactId>zhiflow-mall-admin</artifactId>
+	<packaging>jar</packaging>
+
+	<description>商城管理模块</description>
+
+	<dependencies>
+		<!-- API 接口定义 -->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-api-mall-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-api-upms</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-api-weixin</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-api-pay</artifactId>
+		</dependency>
+		<!--mybatis-->
+		<dependency>
+			<groupId>com.baomidou</groupId>
+			<artifactId>mybatis-plus-spring-boot4-starter</artifactId>
+		</dependency>
+		<!--数据库-->
+<!--		<dependency>-->
+<!--			<groupId>mysql</groupId>-->
+<!--			<artifactId>mysql-connector-java</artifactId>-->
+<!--		</dependency>-->
+		<!--日志处理-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-log</artifactId>
+		</dependency>
+		<!--数据操作-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-data</artifactId>
+		</dependency>
+		<!--common-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-core</artifactId>
+		</dependency>
+		<!--swagger-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-swagger</artifactId>
+		</dependency>
+		<!--安全模块-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-security</artifactId>
+		</dependency>
+		<!--web 模块-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+		<!-- zhiflow-mall-common -->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-mall-common</artifactId>
+		</dependency>
+		<!-- jsoup 富文本白名单净化（文章内容入库净化） -->
+		<dependency>
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+		</dependency>
+		<!-- POI：商品批量导入的 xlsx 模板生成与上传解析（GoodsImportExcelService） -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+		</dependency>
+		<!--短信-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-sms</artifactId>
+		</dependency>
+		<!--分布式事务
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-transaction</artifactId>
+		</dependency>-->
+		<!--分布式锁 Redisson-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-lock</artifactId>
+		</dependency>
+		<!-- Apache Commons IO（修复 NoClassDefFoundError: NullPrintStream） -->
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+		</dependency>
+
+
+		<!-- MeiliSearch Support -->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-search</artifactId>
+		</dependency>
+		<!-- Test dependencies -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<!--监控-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<!-- Prometheus 抓取格式：无此依赖时 /actuator/prometheus 返回 404。
+		     本模块显式引入，保证单独打包时 /actuator/prometheus 可用。
+		     版本由 spring-boot-dependencies BOM 管理，不写死。 -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
+		<!--Flyway：多租户 schema 迁移执行器（MallTenantMigrator）-->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+		<!--单元测试基建：BaseMockitoUnitTest / MyBatisPlusTestSupport / RandomUtils / AssertUtils-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-test</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+</dependencies>
+
+	<build>
+		<plugins>
+			<!-- 覆盖父pom的skip配置，启用测试编译 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.15.0</version>
+				<configuration>
+					<skip>false</skip>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
+						</path>
+						<path>
+							<groupId>org.springframework.boot</groupId>
+							<artifactId>spring-boot-configuration-processor</artifactId>
+							<version>${spring-boot.version}</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<mainClass>com.zhiflow.mall.admin.ZhiflowMallApplication</mainClass>
+				</configuration>
+				<executions>
+					<execution>
+						<id>repackage</id>
+						<phase>package</phase>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>io.fabric8</groupId>
+				<artifactId>docker-maven-plugin</artifactId>
+			</plugin>
+
+			<!--打包时复制jar包到指定文件目录-->
+		</plugins>
+	</build>
+</project>

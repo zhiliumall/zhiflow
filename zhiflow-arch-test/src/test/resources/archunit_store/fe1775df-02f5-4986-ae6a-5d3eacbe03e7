@@ -1,0 +1,2 @@
+com.zhiflow.mall.api.controller.CardSpecController.sellSpecByIds(java.util.List) 缺少方法级 @ApiLogin（类级注解运行期不生效，等于无鉴权）
+com.zhiflow.mall.api.controller.SysDictController.getListPage(com.zhiflow.upms.common.dto.SysDictQuery) 缺少方法级 @ApiLogin（类级注解运行期不生效，等于无鉴权）

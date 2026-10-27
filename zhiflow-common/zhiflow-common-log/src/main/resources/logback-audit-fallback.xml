@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	审计日志兜底文件 appender（S2 R3）。
+
+	用途：审计日志上报 upms 失败或线程池队列溢出时，AuditFallbackWriter 会把内容写到
+	名为 AUDIT_FALLBACK 的 logger。此文件把该 logger 接到独立滚动文件，便于运维单独
+	盯这一路并接告警。
+
+	使用方式——在各服务的 logback-spring.xml 中、${log.path} 定义之后加一行：
+	    <include resource="logback-audit-fallback.xml"/>
+
+	注意 additivity="false"：兜底内容不重复进主日志（AuditFallbackWriter 已经用
+	自己的 logger 打了一条 ERROR 摘要到主日志用于告警）。
+
+	未 include 时的行为：AUDIT_FALLBACK logger 继承 root appender，兜底内容仍会落到
+	主日志——可查，只是不便单独采集。因此本文件是运维优化项，不是数据可靠性的前提。
+-->
+<included>
+	<appender name="auditFallback" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${log.path}/audit-fallback.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${log.path}/%d{yyyy-MM}/audit-fallback.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+			<maxFileSize>50MB</maxFileSize>
+			<!-- 审计兜底比普通日志更需要留存：这些是没能进 DB 的审计记录 -->
+			<maxHistory>90</maxHistory>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{trace.id}] %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<logger name="AUDIT_FALLBACK" level="error" additivity="false">
+		<appender-ref ref="auditFallback"/>
+	</logger>
+</included>

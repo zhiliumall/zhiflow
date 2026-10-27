@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zhiflow.mall.api.mapper.UserDashboardMapper">
+    
+    <!-- 查询用户基本信息 -->
+    <select id="getUserInfo" resultType="com.zhiflow.mall.api.dto.UserDashboardDTO$UserInfo">
+        SELECT
+            ui.ID,
+            ui.nick_name AS nickName,
+            ui.phone,
+            ui.headimg_url AS headimgUrl
+        FROM
+            user_info ui
+        WHERE ui.id = #{userId}
+        AND ui.del_flag = '0'
+    </select>
+    
+    <!-- 查询订单统计信息 -->
+    <!-- 返回单行 map:数字状态码作键,与散装 /orderinfo/countAll 的响应键一致 -->
+    <select id="getOrderCountAll" resultType="java.util.HashMap">
+        SELECT
+            SUM(CASE WHEN status IS NULL AND is_pay = '0' THEN 1 ELSE 0 END) AS "0",
+            SUM(CASE WHEN status = '1' AND is_pay = '1' THEN 1 ELSE 0 END) AS "1",
+            SUM(CASE WHEN status = '2' AND is_pay = '1' THEN 1 ELSE 0 END) AS "2",
+            SUM(CASE WHEN status = '3' AND is_pay = '1' THEN 1 ELSE 0 END) AS "3"
+        FROM order_info
+        WHERE user_id = #{userId}
+          AND del_flag = '0'
+    </select>
+    
+</mapper>

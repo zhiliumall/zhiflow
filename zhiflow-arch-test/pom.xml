@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.zhiflow</groupId>
+		<artifactId>zhiflow-pro</artifactId>
+		<version>1.0.5</version>
+	</parent>
+
+	<artifactId>zhiflow-arch-test</artifactId>
+	<packaging>jar</packaging>
+	<name>${project.artifactId}</name>
+	<description>
+		架构门禁：ArchUnit 四条规则集中维护处。只在 CI/本地跑测试，不参与任何服务的打包
+		（本模块不是任何服务的依赖，CI 构建用的 -pl SVC_MODULE -am 不会带上它）。
+
+		注意：业务模块被 spring-boot-maven-plugin repackage 成 fat jar（class 位于 BOOT-INF/classes），
+		无法作为 Maven 依赖被 ArchUnit 扫描。因此本模块不依赖业务模块，改为直接扫各模块的
+		target/classes 目录（见 ArchScope）。运行前须先 compile 被扫模块。
+	</description>
+
+	<properties>
+		<archunit.version>1.4.1</archunit.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.tngtech.archunit</groupId>
+			<artifactId>archunit-junit5</artifactId>
+			<version>${archunit.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!--
+			刻意不依赖任何业务模块或 Spring：注解判定一律走全限定名字符串（见 ArchPredicates），
+			被扫 class 从 target/classes 目录读取（见 ArchScope）。门禁因此不受业务模块
+			依赖变化影响，且 -am 不会连带编译半个仓库。
+		-->
+	</dependencies>
+</project>

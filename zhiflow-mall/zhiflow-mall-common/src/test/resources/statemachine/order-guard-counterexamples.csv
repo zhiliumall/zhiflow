@@ -1,0 +1,9 @@
+rule|status|isPay|deliveryWay|event|operator|reason|expected|manualTarget
+O10 买家不能发货|1|1|1|SHIP|USER|-|不能触发|-
+M1 人工处理不填原因|6|1|1|MANUAL_FIX|ADMIN|-|必须填写原因|PENDING_SHIP
+M1 人工处理不选目标|6|1|1|MANUAL_FIX|ADMIN|变更单|合法的目标状态|-
+M1 人工处理目标是非法态|6|1|1|MANUAL_FIX|ADMIN|变更单|合法的目标状态|LEGACY_INVALID
+M1 系统不能人工处理|6|1|1|MANUAL_FIX|SYSTEM|变更单|不能触发|PENDING_SHIP
+O5 渠道不能取消订单|-|0|1|CANCEL|CHANNEL|-|不能触发|-
+O2 后台不能报支付成功|-|0|1|PAY_SUCCESS|ADMIN|-|不能触发|-
+O12 渠道不能替买家确认收货|2|1|1|RECEIVE|CHANNEL|-|不能触发|-

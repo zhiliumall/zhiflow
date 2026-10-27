@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhiflow.mall.admin.mapper.HomepageOverviewMapper">
+  <sql id="shopOrder"><if test="scope.shop"> AND shop_id = #{scope.shopId}</if></sql>
+
+  <!-- HomepagePaidCashflowPredicate: payment event only; deliberately no mutable order-status filter. -->
+  <select id="selectPaid" resultType="com.zhiflow.mall.admin.statistics.HomepageFinancialAggregate">
+    SELECT COUNT(DISTINCT id) AS paidOrderCount, COALESCE(SUM(payment_price), 0) AS amount
+    FROM order_info WHERE del_flag = '0' AND is_pay = '1' AND payment_time IS NOT NULL
+      AND payment_time &gt;= #{window.startAt} AND payment_time &lt; #{window.endAt}<include refid="shopOrder"/>
+  </select>
+  <select id="selectDailyPaid" resultType="com.zhiflow.mall.admin.statistics.HomepageDailyAggregate">
+    SELECT CAST(payment_time AS date) AS date, COUNT(DISTINCT id) AS paidOrderCount, COALESCE(SUM(payment_price), 0) AS amount
+    FROM order_info WHERE del_flag = '0' AND is_pay = '1' AND payment_time IS NOT NULL
+      AND payment_time &gt;= #{window.startAt} AND payment_time &lt; #{window.endAt}<include refid="shopOrder"/>
+    GROUP BY CAST(payment_time AS date) ORDER BY date
+  </select>
+  <select id="selectFirstEventTime" resultType="java.time.LocalDateTime">
+    SELECT MIN(payment_time) FROM order_info WHERE del_flag = '0' AND is_pay = '1' AND payment_time IS NOT NULL AND payment_time &lt; #{cutoff}<include refid="shopOrder"/>
+  </select>
+  <select id="selectUsers" resultType="com.zhiflow.mall.admin.statistics.HomepageUserAggregate">
+    SELECT COUNT(*) FILTER (WHERE create_time &gt;= #{today.startAt} AND create_time &lt; #{today.endAt}) AS todayNewUserCount,
+      COUNT(*) FILTER (WHERE create_time &gt;= #{month.startAt} AND create_time &lt; #{month.endAt}) AS monthNewUserCount,
+      COUNT(*) AS totalUserCount FROM user_info WHERE del_flag = '0'
+  </select>
+  <select id="selectDailyUsers" resultType="com.zhiflow.mall.admin.statistics.HomepageDailyAggregate">
+    SELECT CAST(create_time AS date) AS date, COUNT(*) AS paidOrderCount, 0 AS amount FROM user_info
+    WHERE del_flag = '0' AND create_time &gt;= #{window.startAt} AND create_time &lt; #{window.endAt}
+    GROUP BY CAST(create_time AS date) ORDER BY date
+  </select>
+</mapper>

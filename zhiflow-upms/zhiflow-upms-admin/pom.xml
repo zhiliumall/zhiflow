@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.zhiflow</groupId>
+		<artifactId>zhiflow-upms</artifactId>
+		<version>1.0.5</version>
+	</parent>
+
+	<artifactId>zhiflow-upms-admin</artifactId>
+	<packaging>jar</packaging>
+
+	<description>用户权限管理模块</description>
+
+	<dependencies>
+		<!-- UPMS API 接口定义 -->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-api-upms</artifactId>
+		</dependency>
+		<!-- Mall API 接口定义 -->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-api-mall-api</artifactId>
+		</dependency>
+		<!-- Pay API 接口定义 -->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-api-pay</artifactId>
+		</dependency>
+		<!-- Mall Admin API 接口定义 -->
+		<!-- WX API 接口定义 -->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-api-weixin</artifactId>
+		</dependency>
+		<!--upms、model 模块-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-upms-common</artifactId>
+		</dependency>
+		<!--日志处理-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-log</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-data</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-storage</artifactId>
+		</dependency>
+		<!--swagger-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-swagger</artifactId>
+		</dependency>
+		<!--spring security 、oauth、jwt依赖-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-security</artifactId>
+		</dependency>
+		<!--mybatis-->
+		<dependency>
+			<groupId>com.baomidou</groupId>
+			<artifactId>mybatis-plus-spring-boot4-starter</artifactId>
+		</dependency>
+		<!--数据库-->
+<!--		<dependency>-->
+<!--			<groupId>mysql</groupId>-->
+<!--			<artifactId>mysql-connector-java</artifactId>-->
+<!--		</dependency>-->
+		<!--web 模块-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+		<!--sms-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-sms</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-mall-common</artifactId>
+		</dependency>
+		<!--分布式锁 Redisson-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-lock</artifactId>
+		</dependency>
+		<!--Flyway：共享 schema（public / upms / wx）迁移（SharedSchemaMigrator）-->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<!--监控-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<!-- Prometheus 抓取格式：无此依赖时 /actuator/prometheus 返回 404。
+		     本模块显式引入，保证单独打包时 /actuator/prometheus 可用。
+		     版本由 spring-boot-dependencies BOM 管理，不写死。 -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
+		<!-- 测试：租户可见性过滤的空集短路是安全边界（跳过 in 条件=返回全部租户），须有回归保护 -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- 测试：首启口令初始化的 SQL 跑在内存库上 -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
+</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<mainClass>com.zhiflow.upms.admin.ZhiflowUpmsApplication</mainClass>
+				</configuration>
+				<executions>
+					<execution>
+						<id>repackage</id>
+						<phase>package</phase>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>io.fabric8</groupId>
+				<artifactId>docker-maven-plugin</artifactId>
+			</plugin>
+
+			<!--打包时复制jar包到指定文件目录-->
+		</plugins>
+	</build>
+
+</project>

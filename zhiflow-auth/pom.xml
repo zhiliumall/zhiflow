@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.zhiflow</groupId>
+		<artifactId>zhiflow-pro</artifactId>
+		<version>1.0.5</version>
+	</parent>
+
+	<artifactId>zhiflow-auth</artifactId>
+	<packaging>jar</packaging>
+
+	<description>认证授权中心</description>
+
+	<dependencies>
+		<!-- ⚠️ Boot 3 时代 auth 的内嵌 Web 容器是 zhiflow-common-datasource 传递进来的 undertow starter；
+		     升级时移除 undertow 后 auth 成了全仓唯一没有任何 web starter 的 servlet 服务，
+		     表现是启动直接失败 "no ServletWebServerFactory bean defined"（2026-09-12 生产实测）。
+		     其余 servlet 服务都显式声明了 webmvc，这里补齐，保持一致。 -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+		<!--upms api、model 模块-->
+		<!-- UPMS API 接口定义 -->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-api-upms</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-upms-common</artifactId>
+		</dependency>
+		<!--security-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-security</artifactId>
+		</dependency>
+		<!--mysql 驱动-->
+<!--		<dependency>-->
+<!--			<groupId>mysql</groupId>-->
+<!--			<artifactId>mysql-connector-java</artifactId>-->
+<!--		</dependency>-->
+		<!--缓存操作-->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-data</artifactId>
+		</dependency>
+		<!--JDBC相关-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jdbc</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-log</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-common-swagger</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<!--监控-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<!-- Prometheus 抓取格式：无此依赖时 /actuator/prometheus 返回 404。
+		     本模块显式引入，保证单独打包时 /actuator/prometheus 可用。
+		     版本由 spring-boot-dependencies BOM 管理，不写死。 -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
+</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<mainClass>com.zhiflow.auth.ZhiflowAuthApplication</mainClass>
+				</configuration>
+				<executions>
+					<execution>
+						<id>repackage</id>
+						<phase>package</phase>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>io.fabric8</groupId>
+				<artifactId>docker-maven-plugin</artifactId>
+			</plugin>
+
+			<!--打包时复制jar包到指定文件目录-->
+		</plugins>
+	</build>
+
+</project>

@@ -1,0 +1,3 @@
+com.zhiflow.mall.common.config.MallConfigProperties
+com.zhiflow.mall.common.config.RedisConfigProperties
+com.zhiflow.mall.common.orderno.OrderNoGeneratorAutoConfiguration

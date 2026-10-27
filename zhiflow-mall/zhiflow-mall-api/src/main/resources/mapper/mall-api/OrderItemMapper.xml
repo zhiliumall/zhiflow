@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (C) 2025 gaipharma.com
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zhiflow.mall.api.mapper.OrderItemMapper">
+
+	<resultMap id="orderItemMap" type="com.zhiflow.mall.common.entity.OrderItem">
+		<id property="id" column="id"/>
+		<result property="tenantId" column="tenant_id"/>
+		<result property="shopId" column="shop_id"/>
+		<result property="delFlag" column="del_flag"/>
+		<result property="createTime" column="create_time"/>
+		<result property="updateTime" column="update_time"/>
+		<result property="orderId" column="order_id"/>
+		<result property="spuId" column="spu_id"/>
+		<result property="spuName" column="spu_name"/>
+		<result property="specInfo" column="spec_info"/>
+		<result property="skuId" column="sku_id"/>
+		<result property="picUrl" column="pic_url"  jdbcType="VARCHAR"/>
+		<result property="quantity" column="quantity"/>
+		<result property="salesPrice" column="sales_price"/>
+		<result property="freightPrice" column="freight_price"/>
+		<result property="paymentPrice" column="payment_price"/>
+		<!-- 货款实付（不含运费），售后按项可退上限 -->
+		<result property="paidAmount" column="paid_amount"/>
+		<result property="paymentPoints" column="payment_points"/>
+		<result property="paymentCouponPrice" column="payment_coupon_price"/>
+		<result property="paymentPointsPrice" column="payment_points_price"/>
+		<result property="remark" column="remark"/>
+		<result property="logisticsId" column="logistics_id"/>
+		<result property="logisticsName" column="logistics_name"/>
+		<result property="logisticsNo" column="logistics_no"/>
+		<result property="deliveryType" column="delivery_type"/>
+		<result property="deliveryTime" column="delivery_time"/>
+		<!-- 商品项状态、本项发货时刻、到账累计 -->
+		<result property="itemStatus" column="item_status"/>
+		<result property="shippedTime" column="shipped_time"/>
+		<!-- V176 每证每月品类限购快照 -->
+	</resultMap>
+
+	<resultMap id="orderItemMap2" extends="orderItemMap" type="com.zhiflow.mall.common.entity.OrderItem">
+	</resultMap>
+
+	<resultMap id="orderItemMap3" extends="orderItemMap" type="com.zhiflow.mall.common.entity.OrderItem">
+		<result property="logisticsId" column="effective_logistics_id"/>
+	</resultMap>
+
+	<sql id="orderItemSql">
+		order_item.id,
+		order_item.tenant_id,
+		order_item.shop_id,
+		order_item.del_flag,
+		order_item.create_time,
+		order_item.update_time,
+		order_item.order_id,
+		order_item.spu_id,
+		order_item.spu_name,
+		order_item.spec_info,
+		order_item.sku_id,
+		order_item.pic_url,
+		order_item.quantity,
+		order_item.sales_price,
+		order_item.freight_price,
+		order_item.payment_price,
+		order_item.paid_amount,
+		order_item.payment_points,
+		order_item.payment_coupon_price,
+		order_item.payment_points_price,
+		order_item.remark,
+		order_item.logistics_id,
+		order_item.delivery_type,
+		order_item.delivery_time,
+		order_item.item_status,
+		order_item.shipped_time
+	</sql>
+
+	<select id="selectList2" resultMap="orderItemMap3">
+		SELECT
+		<include refid="orderItemSql"/>,
+		COALESCE(order_item.logistics_id, order_logistics.id) as effective_logistics_id,
+		order_logistics.logistics_code as logistics_code,
+		order_logistics.logistics_name as logistics_name,
+		order_logistics.logistics_no as logistics_no
+		FROM order_item order_item
+		LEFT JOIN order_logistics order_logistics ON order_item.order_id = order_logistics.order_id
+		WHERE order_item.order_id = #{orderId}
+	</select>
+
+	<!-- selectList2 的批量版：与 selectList2 逐字一致，仅把 order_id = 改为 order_id IN，供订单列表两段式装配用 -->
+	<select id="selectListByOrderIds" resultMap="orderItemMap3">
+		SELECT
+		<include refid="orderItemSql"/>,
+		COALESCE(order_item.logistics_id, order_logistics.id) as effective_logistics_id,
+		order_logistics.logistics_code as logistics_code,
+		order_logistics.logistics_name as logistics_name,
+		order_logistics.logistics_no as logistics_no
+		FROM order_item order_item
+		LEFT JOIN order_logistics order_logistics ON order_item.order_id = order_logistics.order_id
+		WHERE order_item.order_id IN
+		<foreach collection="orderIds" item="orderId" open="(" separator="," close=")">
+			#{orderId}
+		</foreach>
+	</select>
+
+	<select id="selectById2" resultMap="orderItemMap2">
+		SELECT
+		<include refid="orderItemSql"/>
+		FROM order_item order_item
+		WHERE order_item.id = #{id}
+	</select>
+
+	<select id="listOrder" resultType="com.zhiflow.mall.common.entity.OrderItem"
+			parameterType="java.lang.String">
+		SELECT
+		<include refid="orderItemSql"/>
+		FROM order_item order_item
+		WHERE order_item.order_id = #{orderId}
+	</select>
+</mapper>

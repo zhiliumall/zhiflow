@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhiflow.upms.admin.mapper.SysRoleMapper">
+
+	<select id="listRoleIdsByUserId" resultType="java.lang.String">
+        SELECT
+            r.id
+        FROM
+		sys_role r, sys_user_role sur WHERE r.id = sur.role_id AND r.del_flag = '0' AND sur.del_flag = '0' and  sur.user_id IN (#{userId})
+    </select>
+
+	<!-- C-09：用户分页 roleIds 批量查询（消除 N+1）。
+	     sys_role/sys_user_role 均为多租户表，插件会各注入 tenant_id，两表必须带别名(r/sur)避免 PG ambiguous -->
+	<select id="listUserRolesByUserIds" resultType="java.util.Map">
+		SELECT sur.user_id AS "userId", r.id AS "roleId"
+		FROM sys_role r, sys_user_role sur
+		WHERE r.id = sur.role_id AND r.del_flag = '0' AND sur.del_flag = '0'
+		  AND sur.user_id IN
+		<foreach collection="userIds" item="uid" open="(" separator="," close=")">#{uid}</foreach>
+	</select>
+
+	<!-- 用户分页 roleList 批量装配（单条 SQL，无 N+1）。与 listUserRolesByUserIds 同样：
+	     sys_role/sys_user_role 均为多租户表，插件会各注入 tenant_id，两表必须带别名(r/sur)避免 PG ambiguous -->
+	<select id="listUserRolesDetailByUserIds" resultType="java.util.Map">
+		SELECT sur.user_id AS "userId", r.id AS "roleId",
+		       r.role_name AS "roleName", r.role_code AS "roleCode", r.role_desc AS "roleDesc"
+		FROM sys_role r, sys_user_role sur
+		WHERE r.id = sur.role_id AND r.del_flag = '0' AND sur.del_flag = '0'
+		  AND sur.user_id IN
+		<foreach collection="userIds" item="uid" open="(" separator="," close=")">#{uid}</foreach>
+	</select>
+</mapper>

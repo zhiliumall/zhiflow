@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (C) 2025 gaipharma.com
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zhiflow.mall.api.mapper.OrderInfoMapper">
+
+	<resultMap id="orderInfoMap" type="com.zhiflow.mall.common.entity.OrderInfo">
+		<id property="id" column="id"/>
+		<result property="tenantId" column="tenant_id"/>
+		<result property="shopId" column="shop_id"/>
+		<result property="delFlag" column="del_flag"/>
+		<result property="createTime" column="create_time"/>
+		<result property="updateTime" column="update_time"/>
+		<result property="appType" column="app_type"/>
+		<result property="appId" column="app_id"/>
+		<result property="userId" column="user_id"/>
+		<result property="orderNo" column="order_no"/>
+		<result property="salesPrice" column="sales_price"/>
+		<result property="freightPrice" column="freight_price"/>
+		<result property="paymentWay" column="payment_way"/>
+		<result property="deliveryWay" column="delivery_way"/>
+		<result property="paymentType" column="payment_type"/>
+		<result property="tradeType" column="trade_type"/>
+		<result property="paymentPrice" column="payment_price"/>
+		<result property="paymentPoints" column="payment_points"/>
+		<result property="paymentCouponPrice" column="payment_coupon_price"/>
+		<result property="paymentPointsPrice" column="payment_points_price"/>
+		<result property="paymentTime" column="payment_time"/>
+		<result property="receiverTime" column="receiver_time"/>
+		<result property="closingTime" column="closing_time"/>
+		<result property="transactionId" column="transaction_id"/>
+		<result property="remark" column="remark"/>
+		<result property="isPay" column="is_pay"/>
+		<result property="name" column="name"/>
+		<result property="status" column="status"/>
+		<result property="userMessage" column="user_message"/>
+		<result property="orderType" column="order_type"/>
+		<result property="recName" column="rec_name"/>
+		<result property="recTel" column="rec_tel"/>
+		<result property="recAddress" column="rec_address"/>
+		<result property="areaId" column="area_id"/>
+		<result property="logisticStatus" column="logistic_status"/>
+	</resultMap>
+
+	<resultMap id="orderInfoMap3" extends="orderInfoMap" type="com.zhiflow.mall.common.entity.OrderInfo">
+		<collection property="listOrderItem" ofType="com.zhiflow.mall.common.entity.OrderItem"
+					select="com.zhiflow.mall.api.mapper.OrderItemMapper.selectList2"
+					column="{orderId=id}">
+		</collection>
+	</resultMap>
+
+	<sql id="orderInfoSql">
+		order_info.id,
+		order_info.tenant_id,
+		order_info.shop_id,
+		order_info.del_flag,
+		order_info.create_time,
+		order_info.update_time,
+		order_info.app_type,
+		order_info.app_id,
+		order_info.user_id,
+		order_info.order_no,
+		order_info.sales_price,
+		order_info.freight_price,
+		order_info.payment_way,
+		order_info.delivery_way,
+		order_info.payment_type,
+		order_info.trade_type,
+		order_info.payment_price,
+		order_info.payment_points,
+		order_info.payment_coupon_price,
+		order_info.payment_points_price,
+		order_info.payment_time,
+		order_info.receiver_time,
+		order_info.closing_time,
+		order_info.is_pay,
+		order_info.name,
+		order_info.status,
+		order_info.user_message,
+		order_info.transaction_id,
+		order_info.remark,
+		order_info.order_type,
+		order_info.rec_name,
+		order_info.rec_tel,
+		order_info.rec_address,
+		order_info.area_id,
+		order_info.logistic_status
+	</sql>
+
+	<select id="selectPage2" resultMap="orderInfoMap">
+		SELECT
+		<include refid="orderInfoSql"/>
+		FROM order_info order_info
+		<where>
+			<!-- 手写 SQL 不会被 MP 逻辑删除自动加条件,不写这句已软删的订单会照样出现在用户列表里
+			     (实测某账号 13 条 del_flag='1' 的单仍在「我的订单」里,其中含已删的测试单);
+			     而同侧 /countAll 走 MP wrapper 是过滤软删的,两边口径本来就不一致。 -->
+			AND order_info.del_flag = '0'
+			<if test="query.shopId != null">
+				AND order_info.shop_id = #{query.shopId}
+			</if>
+			<if test="query.keyword != null">
+				and (order_info.order_no like '%' || #{query.keyword} || '%'
+				or order_info.name like '%' || #{query.keyword} || '%')
+			</if>
+			<if test="query.userId != null">
+				AND order_info.user_id = #{query.userId}
+			</if>
+			<if test="query.orderType != null">
+				AND order_info.order_type = #{query.orderType}
+			</if>
+			<if test="query.status != null">
+				<if test="query.status == '0'.toString()">
+					AND order_info.is_pay = '0'
+					AND order_info.status is null
+				</if>
+				<if test="query.status != '0'.toString()">
+					AND order_info.status = #{query.status}::text
+				</if>
+			</if>
+			<if test="query.orderNo != null">
+				AND order_info.order_no = #{query.orderNo}
+			</if>
+		</where>
+		<!-- 缺 ORDER BY 时 PostgreSQL 按堆序返回,分页非确定,最新订单会散落到后面的页导致首页看不到;
+		     按创建时间倒序,id 做二级键保证同秒创建的订单分页稳定(与 admin 侧 ORDER BY ct DESC 对齐)。
+		     「全部」tab(不带 status)额外先按在途优先分桶:光按时间倒序时,取消单一多就把在途单压到几十位
+		     开外,用户从「查看全部」进来首屏全是已取消,以为自己没有在途订单。带 status 时同桶,不加这段。 -->
+		ORDER BY
+		<if test="query.status == null">
+			CASE
+				WHEN order_info.status IS NULL AND order_info.is_pay = '0' THEN 0
+				WHEN order_info.status = '1' THEN 1
+				WHEN order_info.status = '2' THEN 2
+				WHEN order_info.status = '3' THEN 3
+				ELSE 4
+			END,
+		</if>
+		order_info.create_time DESC, order_info.id DESC
+	</select>
+
+	<select id="selectById2" resultMap="orderInfoMap3">
+		SELECT
+		<include refid="orderInfoSql"/>
+		FROM order_info order_info
+		WHERE order_info.id = #{id}
+	</select>
+	<!--
+		弹幕：最近 10 笔已付款订单。
+		MySQL 迁 PG 时把 order_info 误写成 oi（本句没有 oi 这个别名），整条 SQL 一直报 missing FROM-clause。
+		另：PG 的 DESC 把 NULL 排最前（MySQL 排最后），未付款单 payment_time 为空，不滤掉就会占满 10 条且 timeAgo 为空。
+	-->
+	<select id="getList" resultType="java.util.Map">
+		SELECT
+			user_info.headimg_url headimgUrl,
+			user_info.nick_name nickName,
+			FLOOR(EXTRACT(EPOCH FROM (NOW() - order_info.payment_time)) / 3600) || '小时前' AS timeAgo
+		FROM
+			order_info order_info
+				INNER JOIN
+			user_info user_info ON order_info.user_id = user_info.id
+		WHERE order_info.payment_time IS NOT NULL
+		ORDER BY
+			order_info.payment_time DESC
+			LIMIT 10
+	</select>
+
+</mapper>

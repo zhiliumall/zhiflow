@@ -1,0 +1,309 @@
+# 单体（唯一可执行 jar）的全部配置。开源分支去掉了配置中心，配置只有这一份本地文件。
+#
+# 需要按部署修改的值都用环境变量注入，下面 ${变量:默认值} 的默认值只适合本机开发：
+#   必填：PG_HOST / PG_PASSWORD、REDIS_HOST
+#   建议：NOTIFY_HOST（支付回调域名）、HASHIDS_SALT（对外 id 混淆的盐，至少 32 个字符，上线后不能再改）
+#   可选：MEILISEARCH_*（不配则搜索走数据库）、SMS_*（不配则不启用短信验证码）
+#
+# 开发环境：SPRING_PROFILES_ACTIVE=dev 才允许短信 mock（固定验证码 9999）；生产不要开 dev。
+
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  tomcat:
+    uri-encoding: UTF-8
+    threads:
+      max: 200
+      min-spare: 10
+    max-connections: 8192
+    accept-count: 200
+    keep-alive-timeout: 60s
+
+spring:
+  application:
+    name: zhiflow-boot
+  main:
+    # 各模块合在一个进程里，少数同名 bean 定义会互相覆盖（原各服务里本来就各有一份）
+    allow-bean-definition-overriding: true
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  # 商城多 schema 迁移由 MallTenantMigrator 程序化执行，不用 Flyway 自动配置
+  flyway:
+    enabled: false
+
+  datasource:
+    # 单数据源。没有租户上下文的 SQL 按这里的 currentSchema 解析；有租户时 SchemaInterceptor
+    # 每条 SQL 前设 search_path = 商城租户 schema, 共享 schema, public（见下面 sharding.shared-schemas）
+    url: jdbc:postgresql://${PG_HOST:localhost}:${PG_PORT:5432}/${PG_DATABASE:zhiflow}?currentSchema=zhiflow_mall_1,zhiflow_upms,zhiflow_wx,public&reWriteBatchedInserts=true&defaultRowFetchSize=256&prepareThreshold=1&ApplicationName=${spring.application.name}
+    username: ${PG_USERNAME:postgres}
+    password: ${PG_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${PG_POOL_SIZE:20}
+      minimum-idle: 5
+      connection-timeout: 10000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+    sharding:
+      enabled: true
+      # 商城租户 schema 前缀：租户 1 → zhiflow_mall_1
+      dbname: zhiflow_mall
+      shared-schemas:
+        - zhiflow_upms
+        - zhiflow_wx
+      url: jdbc:postgresql://${PG_HOST:localhost}:${PG_PORT:5432}/${PG_DATABASE:zhiflow}?reWriteBatchedInserts=true
+      dbusername: ${spring.datasource.username}
+      dbpassword: ${spring.datasource.password}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: 5s
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 2
+          max-wait: 5000
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 2h
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+zhiflow:
+  # URL 前缀：按 Controller 所在包给每个模块挂命名空间（前端按这些前缀调接口）
+  path-prefix:
+    legacy-compat: false
+    namespaces:
+      - value: /mallapi
+        base-package: com.zhiflow.mall.api.controller
+        authentication-mode: api-login
+      - value: /mall
+        base-package: com.zhiflow.mall.admin.controller
+      - value: /upms
+        base-package: com.zhiflow.upms.admin.controller
+      - value: /auth
+        base-package: com.zhiflow.auth.controller
+      - value: /pay
+        base-package: com.zhiflow.pay.admin.controller
+      - value: /weixin
+        base-package: com.zhiflow.weixin.admin.controller
+  # 同一物理连接连续执行同一租户的 SQL 时跳过重复的 SET search_path
+  schema-interceptor:
+    memoize: true
+  monolith:
+    # 单体自带原网关的 from 头剥离、恶意路径拦截与登录验证码校验
+    gateway-parity:
+      enabled: true
+  # 短信验证码：provider 留空 = 不启用；mock 只许 dev profile；aliyun / tencent 要配签名与模板
+  sms:
+    provider: ${SMS_PROVIDER:}
+    sign-name: ${SMS_SIGN_NAME:}
+    template-code: ${SMS_TEMPLATE_CODE:}
+    aliyun:
+      access-key-id: ${SMS_ALIYUN_ACCESS_KEY_ID:}
+      access-key-secret: ${SMS_ALIYUN_ACCESS_KEY_SECRET:}
+    tencent:
+      secret-id: ${SMS_TENCENT_SECRET_ID:}
+      secret-key: ${SMS_TENCENT_SECRET_KEY:}
+      sdk-app-id: ${SMS_TENCENT_SDK_APP_ID:}
+  # 文件存储：后台没配「文件存储配置」或选了「本地」时，文件存在下面的目录、经 /files/** 对外提供；
+  # 多实例部署要用共享目录，或在后台改配 MinIO
+  storage:
+    local:
+      dir: ${FILE_STORAGE_DIR:./data/uploads}
+      url-prefix: ${FILE_URL_PREFIX:/files}
+  perf:
+    # 进程内 L1（Caffeine + 代号标记跨实例失效）：只认 RedisL1Settings 白名单里审计过的缓存名，写不带租户前缀的名字。
+    # 商品详情静态快照命中时省掉每请求的反序列化；库存缓存 mall:goods_stock#5 写了也不生效（只靠 TTL 过期）
+    redis-l1:
+      cache-names: mall:goods_detail#600
+    # 下单后某 SKU 剩余库存 ≤ 阈值时，提交后清该商品的详情库存缓存（详情立即显示售罄 / 低库存）；0 = 只在售罄时，负数 = 关
+    goods-stock-evict:
+      threshold: 5
+  # 接口限流：规则名见各接口上的 @RateLimit，这里可按规则名覆盖阈值
+  rate-limit:
+    enabled: true
+  # 后台登录失败锁定
+  security:
+    login-lock:
+      enabled: true
+      max-failures: 5
+      window-minutes: 15
+      lock-minutes: 15
+
+# 登录密码不做前端加密（写死在前端的密钥每个部署都一样，等于没有加密），传输安全靠 TLS。
+# gateway.ignore-clients（免滑块验证码的客户端）刻意不配：所有密码登录都要过验证码。
+security:
+  oauth2:
+    client:
+      # 非空即启用全局异常处理（GlobalBizExceptionHandler 以它为开关）
+      client-id: api
+      # 匿名可访问的后台接口（C 端 /mallapi 由 @ApiLogin 自己管，不在这里）
+      release-urls:
+        - /actuator/health
+        - /actuator/info
+        - /v3/api-docs/**
+        - /upms/user/count
+        # 首次登录 / 后台重置之后改密（登录被拒、拿不到令牌时用；凭原口令，限流 + 登录失败锁定）
+        - /upms/user/password/expired
+        # 本地存储的文件（zhiflow.storage.local.url-prefix）
+        - /files/**
+        - /upms/agreementconfig/type/**
+        - /upms/file/upload/out
+
+base:
+  home-dir:
+    windows: C:/zhiflow-file/
+    linux: ${FILE_HOME_DIR:/data/zhiflow-file/}
+  mall:
+    # 支付回调地址的域名：{notifyHost}/mallapi/paynotify/{渠道}/{租户}
+    notifyHost: ${NOTIFY_HOST:http://localhost:8080}
+    userDefaultAvatar: ${DEFAULT_AVATAR_URL:}
+  # 按 tenant_id 自动过滤的表（MyBatis-Plus 租户插件）
+  tenant:
+    column: tenant_id
+    tables:
+      - sys_user
+      - sys_role
+      - sys_log
+      - sys_log_login
+      - sys_config_storage
+      - sys_role_menu
+      - sys_user_role
+      - agreement_config
+      - pay_config
+      - wx_app
+      - wx_user
+      - goods_parameter_template
+      - goods_parameter
+      - goods_parameter_value
+      - goods_category
+      - goods_spu
+      - goods_spu_spec
+      - goods_sku
+      - goods_sku_spec_value
+      - goods_spec
+      - goods_spec_value
+      - goods_brand
+      - shopping_cart
+      - order_info
+      - order_record
+      - order_item
+      - order_logistics
+      - user_address
+      - user_info
+      - material
+      - material_group
+      - shop_info
+      - mall_config
+      - banner
+  # 按租户分表：sys_log 系统租户写基表、默认租户写 sys_log_1
+  shardingtable:
+    tables:
+      - sys_log
+      - sys_log_login
+      - wx_user
+
+mall:
+  statistics:
+    business-time-zone: Asia/Shanghai
+  dev:
+    scheduled-tasks-enabled: ${MALL_SCHEDULED_TASKS_ENABLED:true}
+  tenant-migrator:
+    enabled: true
+
+# 共享 schema（public / upms / wx）的结构迁移：空库首次启动执行 V1 基线（建表 + 种子）；
+# 首启给没有口令的后台账号生成随机口令（打印在启动日志里）
+upms:
+  schema-migrator:
+    enabled: true
+    schema: zhiflow_upms
+    wx-schema: zhiflow_wx
+  first-boot-password:
+    enabled: true
+
+# 对外 id 混淆（商品 id 等）。留空 = 不混淆、直接用原始 id；配了至少 32 个字符（短了启动即报错）。
+# 上线后不能再改，否则老链接里的 id 解不出来
+hashids:
+  salt: ${HASHIDS_SALT:}
+
+# 商品搜索（可选）：不开时搜索查数据库；开了以后商品增删改在事务提交后写进索引
+meilisearch:
+  enabled: ${MEILISEARCH_ENABLED:false}
+  hostUrl: ${MEILISEARCH_HOST:http://localhost:7700}
+  searchKey: ${MEILISEARCH_SEARCH_KEY:}
+  adminKey: ${MEILISEARCH_ADMIN_KEY:}
+  limit: 100
+
+# 滑块验证码（tianai-captcha）
+captcha:
+  prefix: captcha
+  expire:
+    default: 60000
+    WORD_IMAGE_CLICK: 20000
+  init-default-resource: true
+  local-cache-enabled: true
+  local-cache-size: 20
+  local-cache-wait-time: 5000
+  local-cache-period: 2000
+  secondary:
+    enabled: true
+    expire: 120000
+    keyPrefix: "captcha:secondary"
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath*:/mapper/**/*Mapper.xml
+  # 按包扫描注册类型处理器（List / JSONArray / 数组 / jsonb 等字段靠它们映射，别按名字删）
+  type-handlers-package: com.zhiflow.common.core.mybatis.typehandler
+  global-config:
+    sql-parser-cache: true
+    banner: false
+    db-config:
+      id-type: auto
+
+# OpenAPI 文档默认关（方案：仅开发环境）。开发时设 SPRINGDOC_ENABLED=true
+springdoc:
+  api-docs:
+    enabled: ${SPRINGDOC_ENABLED:false}
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: ${SPRINGDOC_ENABLED:false}
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  group-configs:
+    - group: default
+      paths-to-match: /**
+      packages-to-scan: com.zhiflow
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  level:
+    root: info

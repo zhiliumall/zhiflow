@@ -1,0 +1,2 @@
+ com.zhiflow.common.log.LogAutoConfiguration
+com.zhiflow.common.log.trace.TraceAutoConfiguration

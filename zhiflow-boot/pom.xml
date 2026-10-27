@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.zhiflow</groupId>
+		<artifactId>zhiflow-pro</artifactId>
+		<version>1.0.5</version>
+	</parent>
+
+	<artifactId>zhiflow-boot</artifactId>
+	<packaging>jar</packaging>
+	<description>
+		装配工程：把既有服务模块按 profile 组合成不同形态的进程。
+
+		形态二（拆分部署）：portal(mall-api)×2 / support(auth+upms+pay) /
+		admin-jobs(mall-admin+weixin+live + 全部定时与 CDC) / im-ws / im-worker。
+		形态一 all（私有化交付）：全部装进一个进程。
+
+		⚠️ 本模块能存在的前提是 spring-boot-maven-plugin 的 repackage 带了 classifier=exec
+		（见根 pom）——否则各服务的主 jar 是 fat jar，class 落在 BOOT-INF/classes，
+		这里一个类都依赖不到。
+	</description>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-mall-admin</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-weixin-admin</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<!-- [P3-5/P3-1] 形态一 all 的其余五个服务。portal / support / im-* 三个 profile 也从这里取。 -->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-mall-api</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-upms-admin</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-pay-admin</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-auth</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<!--
+			冒烟门禁用的内存库。只为让 dynamic-datasource / sqlSessionFactory 建得起来，
+			不跑任何业务 SQL —— 门禁验的是装配，不是 SQL 方言。
+		-->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<finalName>${project.artifactId}</finalName>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<mainClass>com.zhiflow.boot.ZhiflowBootApplication</mainClass>
+				</configuration>
+				<executions>
+					<execution>
+						<id>repackage</id>
+						<phase>package</phase>
+						<goals><goal>repackage</goal></goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

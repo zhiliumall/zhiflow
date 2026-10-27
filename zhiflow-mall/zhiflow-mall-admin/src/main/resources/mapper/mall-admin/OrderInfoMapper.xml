@@ -1,0 +1,591 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (C) 2025 gaipharma.com
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zhiflow.mall.admin.mapper.OrderInfoMapper">
+
+	<resultMap id="orderInfoMap" type="com.zhiflow.mall.common.entity.OrderInfo">
+		<id property="id" column="id"/>
+		<result property="tenantId" column="tenant_id"/>
+		<result property="shopId" column="shop_id"/>
+		<result property="delFlag" column="del_flag"/>
+		<result property="createTime" column="create_time"/>
+		<result property="updateTime" column="update_time"/>
+		<result property="appType" column="app_type"/>
+		<result property="appId" column="app_id"/>
+		<result property="userId" column="user_id"/>
+		<result property="orderNo" column="order_no"/>
+		<result property="salesPrice" column="sales_price"/>
+		<result property="freightPrice" column="freight_price"/>
+		<result property="paymentWay" column="payment_way"/>
+		<result property="deliveryWay" column="delivery_way"/>
+		<result property="paymentType" column="payment_type"/>
+		<result property="tradeType" column="trade_type"/>
+		<result property="paymentPrice" column="payment_price"/>
+		<result property="paymentPoints" column="payment_points"/>
+		<result property="paymentCouponPrice" column="payment_coupon_price"/>
+		<result property="paymentPointsPrice" column="payment_points_price"/>
+		<result property="paymentTime" column="payment_time"/>
+		<result property="receiverTime" column="receiver_time"/>
+		<result property="closingTime" column="closing_time"/>
+		<result property="transactionId" column="transaction_id"/>
+		<result property="remark" column="remark"/>
+		<result property="merchantRemark" column="merchant_remark"/>
+		<result property="isPay" column="is_pay"/>
+		<result property="name" column="name"/>
+		<result property="status" column="status"/>
+		<result property="userMessage" column="user_message"/>
+		<result property="orderType" column="order_type"/>
+		<result property="recName" column="rec_name"/>
+		<result property="recTel" column="rec_tel"/>
+		<result property="recAddress" column="rec_address"/>
+		<result property="areaId" column="area_id"/>
+		<result property="logisticStatus" column="logistic_status"/>
+	</resultMap>
+
+	<resultMap id="orderInfoMap2" extends="orderInfoMap" type="com.zhiflow.mall.common.entity.OrderInfo">
+		<collection property="listOrderItem" ofType="com.zhiflow.mall.common.entity.OrderItem"
+					select="com.zhiflow.mall.admin.mapper.OrderItemMapper.selectList2"
+					column="{orderId=id}">
+		</collection>
+	</resultMap>
+
+	<sql id="orderInfoSql">
+		order_info.id,
+		order_info.tenant_id,
+		order_info.shop_id,
+		order_info.del_flag,
+		order_info.create_time,
+		order_info.update_time,
+		order_info.app_type,
+		order_info.app_id,
+		order_info.user_id,
+		order_info.order_no,
+		order_info.sales_price,
+		order_info.freight_price,
+		order_info.payment_way,
+		order_info.delivery_way,
+		order_info.payment_type,
+		order_info.trade_type,
+		order_info.payment_price,
+		order_info.payment_points,
+		order_info.payment_coupon_price,
+		order_info.payment_points_price,
+		order_info.payment_time,
+		order_info.receiver_time,
+		order_info.closing_time,
+		order_info.is_pay,
+		order_info.name,
+		order_info.status,
+		order_info.user_message,
+		order_info.transaction_id,
+		order_info.remark,
+		order_info.merchant_remark,
+		order_info.order_type,
+		order_info.rec_name,
+		order_info.rec_tel,
+		order_info.rec_address,
+		order_info.area_id,
+		order_info.logistic_status
+	</sql>
+
+	<!-- perf 2026-09-15：resultMap 改用不带嵌套 select 的 orderInfoMap（原 orderInfoMap2 挂了
+	     OrderItemMapper.selectList2 的逐行嵌套 select，每页 20 条订单就是 1+20 条 SQL）；
+	     listOrderItem 现由 OrderInfoServiceImpl.page1 批量装配，见该方法注释。 -->
+	<select id="selectPage1" resultMap="orderInfoMap">
+		SELECT
+		<include refid="orderInfoSql"/>
+		FROM order_info order_info
+		<where>
+			<if test="query.id != null">
+				AND order_info.id = #{query.id}
+			</if>
+			<if test="query.shopId != null">
+				AND order_info.shop_id = #{query.shopId}
+			</if>
+			<if test="query.userId != null">
+				AND order_info.user_id = #{query.userId}
+			</if>
+			<if test="query.status != null">
+				<if test="query.status == '0'.toString()">
+					AND order_info.is_pay = '0'
+					AND order_info.status is null
+				</if>
+				<if test="query.status != '0'.toString()">
+					AND order_info.status = #{query.status}::text
+				</if>
+			</if>
+			<if test="query.isPay != null">
+				AND order_info.is_pay = #{query.isPay}
+			</if>
+			<if test="query.paymentType != null">
+				AND order_info.payment_type = #{query.paymentType}
+			</if>
+			<if test="query.deliveryWay != null">
+				AND order_info.delivery_way = ANY(string_to_array(#{query.deliveryWay}, ','))
+			</if>
+			<if test="query.orderNo != null">
+				AND order_info.order_no = #{query.orderNo}
+			</if>
+			<if test="query.beginTime != null">
+				AND order_info.create_time >= #{query.beginTime}
+			</if>
+			<if test="query.endTime != null">
+				AND #{query.endTime} >= order_info.create_time
+			</if>
+			<if test="query.appType != null">
+				AND order_info.app_type = #{query.appType}
+			</if>
+			<if test="query.orderType != null">
+				AND order_info.order_type = #{query.orderType}
+			</if>
+			<if test="query.name != null">
+				AND order_info.name LIKE CONCAT('%',#{query.name},'%')
+			</if>
+			<if test="query.appId != null">
+				AND order_info.app_id = #{query.appId}
+			</if>
+			<!-- 应用名称模糊搜索：order_info 只有 app_id，名称在 wx 库。用 EXISTS 而非 JOIN，
+			     避免污染共享的 orderInfoSql/orderInfoMap，也不会让订单行翻倍；不传时该条件整段不出现，
+			     SQL 与改动前完全一致。 -->
+			<if test="query.appName != null and query.appName != ''">
+				AND EXISTS (
+					SELECT 1 FROM zhiflow_wx.wx_app wx_app
+					WHERE wx_app.id = order_info.app_id
+					AND wx_app.del_flag = '0'
+					AND wx_app.name LIKE CONCAT('%',#{query.appName},'%')
+				)
+			</if>
+		</where>
+	</select>
+
+	<select id="sumPaymentPrice" resultType="java.math.BigDecimal">
+		SELECT
+			SUM(order_info.payment_price)
+		FROM order_info order_info
+		<where>
+			<if test="query.shopId != null">
+				AND order_info.shop_id = #{query.shopId}
+			</if>
+			<if test="query.userId != null">
+				AND order_info.user_id = #{query.userId}
+			</if>
+			<if test="query.statusList != null and query.statusList.size() > 0">
+				AND order_info.status IN
+				<foreach collection="query.statusList" item="status" open="(" separator="," close=")">
+					#{status}
+				</foreach>
+			</if>
+
+			<if test="query.status != null">
+				<if test="query.status == '0'.toString()">
+					AND order_info.is_pay = '0'
+					AND order_info.status is null
+				</if>
+				<if test="query.status != '0'.toString()">
+					AND order_info.status = #{query.status}::text
+				</if>
+			</if>
+			<if test="query.isPay != null">
+				AND order_info.is_pay = #{query.isPay}
+			</if>
+			<if test="query.deliveryWay != null">
+				AND order_info.delivery_way = #{query.deliveryWay}
+			</if>
+			<if test="query.orderNo != null">
+				AND order_info.order_no = #{query.orderNo}
+			</if>
+			<if test="query.beginTime != null">
+				AND order_info.create_time >= #{query.beginTime}
+			</if>
+			<if test="query.endTime != null">
+				AND #{query.endTime} >= order_info.create_time
+			</if>
+		</where>
+	</select>
+
+	<select id="selectById1" resultMap="orderInfoMap2">
+		SELECT
+		<include refid="orderInfoSql"/>
+		FROM order_info order_info
+		WHERE order_info.id = #{id}
+	</select>
+
+	<select id="statisticsOrderCountSpu" resultType="java.util.Map">
+		SELECT
+		spu_name as spu_name,
+		COUNT(*) ct
+		FROM
+		order_item order_item
+		LEFT JOIN order_info order_info
+		ON order_item.order_id = order_info.id
+		WHERE order_info.is_pay = '1'
+		<if test="query.shopId != null">
+			AND order_info.shop_id = #{query.shopId}
+		</if>
+		<if test="query.beginTime != null">
+			AND order_info.create_time >= #{query.beginTime}
+		</if>
+		<if test="query.endTime != null">
+			AND #{query.endTime} >= order_info.create_time
+		</if>
+		GROUP BY spu_id, spu_name
+		ORDER BY ct DESC
+		LIMIT 10;
+	</select>
+	<select id="statisticsOrderCountShopInfo" resultType="java.util.Map">
+		SELECT
+		shop_info.name,
+		COUNT(*) ct
+		FROM
+		order_item order_item
+		LEFT JOIN shop_info shop_info
+		ON order_item.shop_id = shop_info.id
+		LEFT JOIN order_info order_info
+		ON order_item.order_id = order_info.id
+		WHERE order_info.is_pay = '1'
+		<if test="query.shopId != null">
+			AND order_info.shop_id = #{query.shopId}
+		</if>
+		<if test="query.beginTime != null">
+			AND order_info.create_time >= #{query.beginTime}
+		</if>
+		<if test="query.endTime != null">
+			AND #{query.endTime} >= order_info.create_time
+		</if>
+		GROUP BY order_item.shop_id, shop_info.name
+		ORDER BY ct DESC;
+	</select>
+	<select id="statisticsOrderCountCategory" resultType="java.util.Map">
+		SELECT
+		goods_category.name,
+		COUNT(*) ct
+		FROM
+		order_item order_item
+		LEFT JOIN goods_spu goods_spu
+		ON order_item.spu_id = goods_spu.id
+		LEFT JOIN goods_category goods_category
+		ON goods_spu.category_second = goods_category.id
+		LEFT JOIN order_info order_info
+		ON order_item.order_id = order_info.id
+		WHERE order_info.is_pay = '1'
+		<if test="query.shopId != null">
+			AND order_info.shop_id = #{query.shopId}
+		</if>
+		<if test="query.beginTime != null">
+			AND order_info.create_time >= #{query.beginTime}
+		</if>
+		<if test="query.endTime != null">
+			AND #{query.endTime} >= order_info.create_time
+		</if>
+		GROUP BY goods_spu.category_second, goods_category.name
+		ORDER BY ct DESC;
+	</select>
+
+	<select id="statisticsSaleAmountSpu" resultType="java.util.Map">
+		SELECT
+		spu_name as spu_name,
+		SUM(order_item.payment_price) ct
+		FROM
+		order_item order_item
+		LEFT JOIN order_info order_info
+		ON order_item.order_id = order_info.id
+		WHERE order_info.is_pay = '1'
+		<if test="query.shopId != null">
+			AND order_info.shop_id = #{query.shopId}
+		</if>
+		<if test="query.beginTime != null">
+			AND order_info.create_time >= #{query.beginTime}
+		</if>
+		<if test="query.endTime != null">
+			AND #{query.endTime} >= order_info.create_time
+		</if>
+		GROUP BY spu_id, spu_name
+		ORDER BY ct DESC
+		LIMIT 10;
+	</select>
+	<select id="statisticsSaleAmountShopInfo" resultType="java.util.Map">
+		SELECT
+		shop_info.name,
+		SUM(order_item.payment_price) ct
+		FROM
+		order_item order_item
+		LEFT JOIN shop_info shop_info
+		ON order_item.shop_id = shop_info.id
+		LEFT JOIN order_info order_info
+		ON order_item.order_id = order_info.id
+		WHERE order_info.is_pay = '1'
+		<if test="query.shopId != null">
+			AND order_info.shop_id = #{query.shopId}
+		</if>
+		<if test="query.beginTime != null">
+			AND order_info.create_time >= #{query.beginTime}
+		</if>
+		<if test="query.endTime != null">
+			AND #{query.endTime} >= order_info.create_time
+		</if>
+		GROUP BY order_item.shop_id, shop_info.name
+		ORDER BY ct DESC;
+	</select>
+	<select id="statisticsSaleAmountCategory" resultType="java.util.Map">
+		SELECT
+		goods_category.name,
+		SUM(order_item.payment_price) ct
+		FROM
+		order_item order_item
+		LEFT JOIN goods_spu goods_spu
+		ON order_item.spu_id = goods_spu.id
+		LEFT JOIN goods_category goods_category
+		ON goods_spu.category_second = goods_category.id
+		LEFT JOIN order_info order_info
+		ON order_item.order_id = order_info.id
+		WHERE order_info.is_pay = '1'
+		<if test="query.shopId != null">
+			AND order_info.shop_id = #{query.shopId}
+		</if>
+		<if test="query.beginTime != null">
+			AND order_info.create_time >= #{query.beginTime}
+		</if>
+		<if test="query.endTime != null">
+			AND #{query.endTime} >= order_info.create_time
+		</if>
+		GROUP BY goods_spu.category_second, goods_category.name
+		ORDER BY ct DESC;
+	</select>
+
+	<select id="statisticsSpuSale" resultType="java.util.Map">
+		SELECT
+		goods_spu.name,
+		goods_spu.pic_urls AS picUrls,
+		SUM(order_item.quantity) ct
+		FROM
+		order_item order_item
+		LEFT JOIN goods_spu goods_spu
+		ON order_item.spu_id = goods_spu.id
+		LEFT JOIN order_info order_info
+		ON order_item.order_id = order_info.id
+		WHERE order_info.is_pay = '1'
+		<if test="query.shopId != null">
+			AND order_info.shop_id = #{query.shopId}
+		</if>
+		<if test="query.beginTime != null">
+			AND order_info.create_time >= #{query.beginTime}
+		</if>
+		<if test="query.endTime != null">
+			AND #{query.endTime} >= order_info.create_time
+		</if>
+		GROUP BY goods_spu.id
+		ORDER BY ct DESC
+		LIMIT 10;
+	</select>
+
+	<select id="statisticsSpuSaleShopInfo" resultType="java.util.Map">
+		SELECT
+		shop_info.name,
+		shop_info.img_url AS imgUrl,
+		SUM(order_item.quantity) ct
+		FROM
+		order_item order_item
+		LEFT JOIN shop_info shop_info
+		ON order_item.shop_id = shop_info.id
+		LEFT JOIN order_info order_info
+		ON order_item.order_id = order_info.id
+		WHERE order_info.is_pay = '1'
+		<if test="query.shopId != null">
+			AND order_info.shop_id = #{query.shopId}
+		</if>
+		<if test="query.beginTime != null">
+			AND order_info.create_time >= #{query.beginTime}
+		</if>
+		<if test="query.endTime != null">
+			AND #{query.endTime} >= order_info.create_time
+		</if>
+		GROUP BY order_item.shop_id, shop_info.name, shop_info.img_url
+		ORDER BY ct DESC;
+	</select>
+
+	<select id="statisticsSpuSaleCategory" resultType="java.util.Map">
+		SELECT
+		goods_category.name,
+		SUM(order_item.quantity) ct
+		FROM
+		order_item order_item
+		LEFT JOIN goods_spu goods_spu
+		ON order_item.spu_id = goods_spu.id
+		LEFT JOIN goods_category goods_category
+		ON goods_spu.category_second = goods_category.id
+		LEFT JOIN order_info order_info
+		ON order_item.order_id = order_info.id
+		WHERE order_info.is_pay = '1'
+		<if test="query.shopId != null">
+			AND order_info.shop_id = #{query.shopId}
+		</if>
+		<if test="query.beginTime != null">
+			AND order_info.create_time >= #{query.beginTime}
+		</if>
+		<if test="query.endTime != null">
+			AND #{query.endTime} >= order_info.create_time
+		</if>
+		GROUP BY goods_spu.category_second, goods_category.name
+		ORDER BY ct DESC;
+	</select>
+	<select id="sumOrderAmountAndCountByUserId" resultType="com.zhiflow.mall.common.dto.OrderTotalDTO">
+		select COALESCE(sum(order_info.payment_price),0) totalAmount,count(order_info.id) totalCount
+		from order_info order_info
+		where order_info.user_id=#{userId} and order_info.del_flag='0' and order_info.is_pay = '1'
+	</select>
+
+	<!-- 批量统计各个状态的订单数量（优化版本） -->
+	<select id="selectOrderCountsByStatus" resultType="java.util.Map">
+		SELECT 
+			COALESCE(status::text, '0') as status,
+			COUNT(*) as count
+		FROM order_info
+		WHERE del_flag = '0'
+		<if test="shopId != null and shopId != ''">
+			AND shop_id = #{shopId}
+		</if>
+		GROUP BY status
+		UNION ALL
+		SELECT 
+			'0' as status,
+			COUNT(*) as count
+		FROM order_info
+		WHERE del_flag = '0'
+			AND status IS NULL
+			AND is_pay = '0'
+		<if test="shopId != null and shopId != ''">
+			AND shop_id = #{shopId}
+		</if>
+	</select>
+
+	<!-- 年累计月度销售额 -->
+	<select id="statisticsMonthlySales" resultType="java.util.Map">
+		SELECT to_char(order_info.payment_time, 'MM') || '月' as name,
+			   COALESCE(SUM(order_info.payment_price), 0) as value
+		FROM order_info
+		WHERE order_info.is_pay = '1'
+		AND order_info.status IN ('1','2','3')
+		<if test="query.shopId != null and query.shopId != ''">
+			AND order_info.shop_id = #{query.shopId}
+		</if>
+		<if test="query.beginTime != null">
+			AND order_info.payment_time >= #{query.beginTime}
+		</if>
+		<if test="query.endTime != null">
+			AND #{query.endTime} >= order_info.payment_time
+		</if>
+		GROUP BY to_char(order_info.payment_time, 'MM')
+		ORDER BY name
+	</select>
+
+	<select id="statisticsProvinceSales" resultType="java.util.Map">
+		<!-- 省份销售额：以订单收货地区 area_id 关联地区表取省份（user_info.province 大面积为空，不可用）。
+		     口径与 dailyTrend / channel / northStar / dashboard 逐字对齐
+		     （del_flag='0' / payment_time / is_pay='1' / status IN 1,2,3 / shopId）。
+
+		     修复走查 B14 证据 B：原先 (1) 用 create_time 而其余接口用 payment_time；
+		     (2) INNER JOIN table_area + WHERE mergename LIKE '中国,%' 会把无收货地的订单静默丢弃
+		     —— 2026-07-05 那 5 单（area_id 全 NULL、合计 ¥2,844）整体消失，导致地图合计小于销售额合计；
+		     (3) 不过滤 del_flag。
+
+		     现在 LEFT JOIN + 「未归属」桶，保证 各省之和 + 未归属 = 当期总额。
+		     ⚠ mergename LIKE '中国,%' 必须留在 ON 条件里；挪到 WHERE 会把 LEFT JOIN 退化成 INNER，等于没改。 -->
+		SELECT
+			CASE
+				WHEN sub.province IS NULL OR sub.province = '' THEN '未归属'
+				WHEN sub.province LIKE '%省' THEN REPLACE(sub.province, '省', '')
+				WHEN sub.province LIKE '%市' THEN REPLACE(sub.province, '市', '')
+				WHEN sub.province = '内蒙古自治区' THEN '内蒙古'
+				WHEN sub.province = '广西壮族自治区' THEN '广西'
+				WHEN sub.province = '西藏自治区' THEN '西藏'
+				WHEN sub.province = '宁夏回族自治区' THEN '宁夏'
+				WHEN sub.province = '新疆维吾尔自治区' THEN '新疆'
+				WHEN sub.province LIKE '%特别行政区' THEN REPLACE(sub.province, '特别行政区', '')
+				ELSE sub.province
+			END as name,
+			COALESCE(SUM(sub.payment_price), 0) as value
+		FROM (
+			SELECT split_part(area.mergename, ',', 2) as province, order_info.payment_price
+			FROM order_info
+			LEFT JOIN zhiflow_upms.table_area area
+				ON order_info.area_id = area.id AND area.mergename LIKE '中国,%'
+			WHERE order_info.del_flag = '0'
+			AND order_info.is_pay = '1'
+			AND order_info.status IN ('1','2','3')
+			<if test="query.shopId != null and query.shopId != ''">
+				AND order_info.shop_id = #{query.shopId}
+			</if>
+			<if test="query.beginTime != null">
+				AND order_info.payment_time >= #{query.beginTime}
+			</if>
+			<if test="query.endTime != null">
+				AND #{query.endTime} >= order_info.payment_time
+			</if>
+		) sub
+		GROUP BY 1
+		ORDER BY value DESC
+	</select>
+
+	<!-- 近30天销售走势。口径：del_flag='0' / payment_time / is_pay='1' / status IN 1,2,3 / shopId
+	     （del_flag 是走查 B14 顺带修的第 6 处分歧：dashboard 侧一直有，这四个大屏 SQL 都漏了）。 -->
+	<select id="statisticsDailyTrend" resultType="java.util.Map">
+		SELECT to_char(order_info.payment_time, 'YYYY-MM-DD') as name,
+			   COALESCE(SUM(order_info.payment_price), 0) as value
+		FROM order_info
+		WHERE order_info.del_flag = '0'
+		AND order_info.is_pay = '1'
+		AND order_info.status IN ('1','2','3')
+		<if test="query.shopId != null and query.shopId != ''">
+			AND order_info.shop_id = #{query.shopId}
+		</if>
+		<if test="query.beginTime != null">
+			AND order_info.payment_time >= #{query.beginTime}
+		</if>
+		<if test="query.endTime != null">
+			AND #{query.endTime} >= order_info.payment_time
+		</if>
+		GROUP BY to_char(order_info.payment_time, 'YYYY-MM-DD')
+		ORDER BY name
+	</select>
+
+	<!-- 渠道TOP5 -->
+	<select id="statisticsChannel" resultType="java.util.Map">
+		SELECT CASE order_info.app_type
+				 WHEN 'MA' THEN '微信小程序'
+				 WHEN 'H5' THEN 'H5商城'
+				 WHEN 'H5-WX' THEN '微信公众号'
+				 WHEN 'H5-PC' THEN 'PC商城'
+				 WHEN 'UI' THEN 'APP'
+				 ELSE order_info.app_type
+			   END as name,
+			   COALESCE(SUM(order_info.payment_price), 0) as value
+		FROM order_info
+		WHERE order_info.del_flag = '0'
+		AND order_info.is_pay = '1'
+		AND order_info.status IN ('1','2','3')
+		<if test="query.shopId != null and query.shopId != ''">
+			AND order_info.shop_id = #{query.shopId}
+		</if>
+		<if test="query.beginTime != null">
+			AND order_info.payment_time >= #{query.beginTime}
+		</if>
+		<if test="query.endTime != null">
+			AND #{query.endTime} >= order_info.payment_time
+		</if>
+		GROUP BY CASE order_info.app_type
+					 WHEN 'MA' THEN '微信小程序'
+					 WHEN 'H5' THEN 'H5商城'
+					 WHEN 'H5-WX' THEN '微信公众号'
+					 WHEN 'H5-PC' THEN 'PC商城'
+					 WHEN 'UI' THEN 'APP'
+					 ELSE order_info.app_type
+				   END
+		ORDER BY value DESC
+		LIMIT 5
+	</select>
+
+</mapper>

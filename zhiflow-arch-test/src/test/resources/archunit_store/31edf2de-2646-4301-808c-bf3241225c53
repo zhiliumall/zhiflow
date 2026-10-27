@@ -1,0 +1,10 @@
+com.zhiflow.mall.admin.controller.UserInfoController.batchGet(java.util.List) 既无 @PreAuthorize 也无 @ApiLogin（无鉴权裸接口）
+com.zhiflow.mall.api.controller.CardSpecController.sellSpecByIds(java.util.List) 既无 @PreAuthorize 也无 @ApiLogin（无鉴权裸接口）
+com.zhiflow.mall.api.controller.UserInfoController.login(jakarta.servlet.http.HttpServletRequest, com.zhiflow.mall.common.dto.UserInfoLoginDTO) 既无 @PreAuthorize 也无 @ApiLogin（无鉴权裸接口）
+com.zhiflow.mall.api.controller.UserInfoController.loginByPhone(jakarta.servlet.http.HttpServletRequest, com.zhiflow.mall.common.dto.UserInfoLoginDTO) 既无 @PreAuthorize 也无 @ApiLogin（无鉴权裸接口）
+com.zhiflow.mall.api.controller.UserInfoController.logout(jakarta.servlet.http.HttpServletRequest) 既无 @PreAuthorize 也无 @ApiLogin（无鉴权裸接口）
+com.zhiflow.mall.api.controller.UserInfoController.register(jakarta.servlet.http.HttpServletRequest, com.zhiflow.mall.common.dto.UserInfoLoginDTO) 既无 @PreAuthorize 也无 @ApiLogin（无鉴权裸接口）
+com.zhiflow.mall.api.controller.WxUserController.code2OpenIdMp(jakarta.servlet.http.HttpServletRequest, com.zhiflow.weixin.common.dto.LoginDTO) 既无 @PreAuthorize 也无 @ApiLogin（无鉴权裸接口）
+com.zhiflow.mall.api.controller.WxUserController.loginMp(jakarta.servlet.http.HttpServletRequest, com.zhiflow.weixin.common.dto.LoginDTO) 既无 @PreAuthorize 也无 @ApiLogin（无鉴权裸接口）
+com.zhiflow.upms.admin.controller.SysLogController.saveBatchLogs(java.util.List) 既无 @PreAuthorize 也无 @ApiLogin（无鉴权裸接口）
+com.zhiflow.upms.admin.controller.SysUserController.updateUserInfo(com.zhiflow.upms.common.dto.UserDTO) 既无 @PreAuthorize 也无 @ApiLogin（无鉴权裸接口）

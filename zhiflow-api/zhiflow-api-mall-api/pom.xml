@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.zhiflow</groupId>
+		<artifactId>zhiflow-api</artifactId>
+		<version>1.0.5</version>
+	</parent>
+
+	<artifactId>zhiflow-api-mall-api</artifactId>
+	<packaging>jar</packaging>
+
+	<description>商城服务 API 接口定义 - 店铺、商品、订单服务接口</description>
+
+	<dependencies>
+		<!-- 商城 Entity 和 DTO (仅编译时需要，运行时由各服务提供) -->
+		<dependency>
+			<groupId>com.zhiflow</groupId>
+			<artifactId>zhiflow-mall-common</artifactId>
+		</dependency>
+	</dependencies>
+</project>

@@ -1,0 +1,34 @@
+# 迁移遗留 SQL 存量基线（由 SqlLegacyScanGateTest 校验，只许变短）
+#
+# 格式：规则<TAB>文件[#mapper 语句 id]<TAB>条数
+# 规则说明见 SqlLegacyScanner；治掉一条就把对应条数改小 / 删行，并在提交说明里写清楚。
+# 生成：2026-10-20（CARD-15）。按月清，C 端控制器里的 QUERY_BY_ENTITY 优先。
+
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-admin/src/main/java/com/zhiflow/mall/admin/controller/GoodsBrandController.java	2
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-admin/src/main/java/com/zhiflow/mall/admin/controller/GoodsCategoryController.java	1
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-admin/src/main/java/com/zhiflow/mall/admin/controller/GoodsSkuController.java	1
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-admin/src/main/java/com/zhiflow/mall/admin/controller/GoodsSpecController.java	2
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-admin/src/main/java/com/zhiflow/mall/admin/controller/GoodsSpecValueController.java	2
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-admin/src/main/java/com/zhiflow/mall/admin/controller/GoodsSpuController.java	4
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-admin/src/main/java/com/zhiflow/mall/admin/controller/GoodsSpuSpecController.java	1
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-admin/src/main/java/com/zhiflow/mall/admin/controller/MaterialController.java	1
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-admin/src/main/java/com/zhiflow/mall/admin/controller/MaterialGroupController.java	1
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-admin/src/main/java/com/zhiflow/mall/admin/controller/OrderInfoController.java	5
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-admin/src/main/java/com/zhiflow/mall/admin/controller/OrderItemController.java	1
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-admin/src/main/java/com/zhiflow/mall/admin/controller/OrderLogisticsController.java	1
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-admin/src/main/java/com/zhiflow/mall/admin/controller/UserAddressController.java	1
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-admin/src/main/java/com/zhiflow/mall/admin/controller/UserInfoController.java	6
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-admin/src/main/java/com/zhiflow/mall/admin/service/impl/GoodsCategoryServiceImpl.java	2
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-api/src/main/java/com/zhiflow/mall/api/controller/GoodsBrandController.java	2
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-api/src/main/java/com/zhiflow/mall/api/controller/UserAddressController.java	1
+QUERY_BY_ENTITY	zhiflow-mall/zhiflow-mall-api/src/main/java/com/zhiflow/mall/api/service/impl/GoodsCategoryServiceImpl.java	1
+QUERY_BY_ENTITY	zhiflow-pay/zhiflow-pay-admin/src/main/java/com/zhiflow/pay/admin/controller/PayConfigController.java	1
+QUERY_BY_ENTITY	zhiflow-upms/zhiflow-upms-admin/src/main/java/com/zhiflow/upms/admin/controller/AgreementConfigController.java	1
+QUERY_BY_ENTITY	zhiflow-upms/zhiflow-upms-admin/src/main/java/com/zhiflow/upms/admin/controller/SysDictController.java	2
+QUERY_BY_ENTITY	zhiflow-upms/zhiflow-upms-admin/src/main/java/com/zhiflow/upms/admin/controller/SysLogController.java	1
+QUERY_BY_ENTITY	zhiflow-upms/zhiflow-upms-admin/src/main/java/com/zhiflow/upms/admin/controller/SysLogLoginController.java	1
+QUERY_BY_ENTITY	zhiflow-upms/zhiflow-upms-admin/src/main/java/com/zhiflow/upms/admin/controller/SysRoleController.java	1
+QUERY_BY_ENTITY	zhiflow-upms/zhiflow-upms-admin/src/main/java/com/zhiflow/upms/admin/controller/TableAreaController.java	2
+QUERY_BY_ENTITY	zhiflow-upms/zhiflow-upms-admin/src/main/java/com/zhiflow/upms/admin/service/impl/SysTenantServiceImpl.java	1
+QUERY_BY_ENTITY	zhiflow-weixin/zhiflow-weixin-admin/src/main/java/com/zhiflow/weixin/admin/controller/WxAppController.java	1
+SELECT_ONE_ALL_OPTIONAL	zhiflow-upms/zhiflow-upms-admin/src/main/resources/mapper/upms/SysUserMapper.xml#getByNoTenant	1

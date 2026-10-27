@@ -1,0 +1,150 @@
+# 智流商城一键部署：PostgreSQL + Valkey + 后端 + 网站入口（nginx 托管 H5 与管理后台）。
+#
+# 三个仓库并排放（目录名见 .env 的 ADMIN_SRC / H5_SRC，默认 ../zhiflow-admin、../zhiflow-uniapp）：
+#   ./scripts/init-env.sh        # 第一次：生成 .env（随机数据库 / 缓存口令与 id 混淆盐）
+#   docker compose up -d --build
+#   docker compose logs app | grep -A4 首次启动   # 拿后台首登口令
+#
+# 打开 http://localhost/ 是 H5 用户端，http://localhost/admin/ 是管理后台（端口、域名、证书见 .env）。
+# 可选组件用 profile 开启：--profile minio（对象存储）、--profile search（MeiliSearch 商品搜索）。
+
+name: zhiflow
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: zhiflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${PG_PASSWORD:?在 .env 里设置 PG_PASSWORD（可先运行 scripts/init-env.sh）}
+      TZ: Asia/Shanghai
+    volumes:
+      # PostgreSQL 18 的镜像把数据目录放在 /var/lib/postgresql/18/docker，卷挂上一级
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zhiflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  valkey:
+    image: valkey/valkey:9-alpine
+    restart: unless-stopped
+    command: ["valkey-server", "--requirepass", "${REDIS_PASSWORD:?在 .env 里设置 REDIS_PASSWORD}", "--appendonly", "yes"]
+    volumes:
+      - valkeydata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    # 只在本机回环口开放，方便排查；对外一律经 web（nginx）
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    environment:
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_DATABASE: zhiflow
+      PG_USERNAME: postgres
+      PG_PASSWORD: ${PG_PASSWORD}
+      REDIS_HOST: valkey
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      HASHIDS_SALT: ${HASHIDS_SALT:?在 .env 里设置 HASHIDS_SALT}
+      NOTIFY_HOST: ${NOTIFY_HOST:-${SITE_URL:-http://localhost}}
+      FILE_URL_PREFIX: ${FILE_URL_PREFIX:-/files}
+      SMS_PROVIDER: ${SMS_PROVIDER:-}
+      SMS_SIGN_NAME: ${SMS_SIGN_NAME:-}
+      SMS_TEMPLATE_CODE: ${SMS_TEMPLATE_CODE:-}
+      SMS_ALIYUN_ACCESS_KEY_ID: ${SMS_ALIYUN_ACCESS_KEY_ID:-}
+      SMS_ALIYUN_ACCESS_KEY_SECRET: ${SMS_ALIYUN_ACCESS_KEY_SECRET:-}
+      SMS_TENCENT_SDK_APP_ID: ${SMS_TENCENT_SDK_APP_ID:-}
+      SMS_TENCENT_SECRET_ID: ${SMS_TENCENT_SECRET_ID:-}
+      SMS_TENCENT_SECRET_KEY: ${SMS_TENCENT_SECRET_KEY:-}
+      MEILISEARCH_ENABLED: ${MEILISEARCH_ENABLED:-false}
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_ADMIN_KEY: ${MEILI_MASTER_KEY:-}
+      MEILISEARCH_SEARCH_KEY: ${MEILI_MASTER_KEY:-}
+      # 请求都经 web（nginx）转进来：按 nginx 写的 X-Real-IP 取用户真实 IP（登录日志、支付下单）
+      ZHIFLOW_PERF_CLIENT_IP_ENABLED: "true"
+      JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError}
+    volumes:
+      - appdata:/app/data
+
+  # 两个前端只构建、不单独运行（scale: 0），构建产物由下面的 web 镜像拷走
+  admin:
+    build:
+      context: ${ADMIN_SRC:-../zhiflow-admin}
+      args:
+        VITE_PUBLIC_PATH: /admin/
+        VITE_API_BASE: /admin-api
+        VITE_H5_URL: ${SITE_URL:-}
+    scale: 0
+
+  h5:
+    build:
+      context: ${H5_SRC:-../zhiflow-uniapp}
+    scale: 0
+
+  # 网站入口：/ 是 H5，/admin/ 是管理后台，接口反代到 app（配置见 deploy/web/site.conf）
+  web:
+    build:
+      context: ./deploy/web
+      additional_contexts:
+        admin: service:admin
+        h5: service:h5
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    environment:
+      SERVER_NAME: ${SERVER_NAME:-}
+      HTTPS_PORT: ${HTTPS_PORT:-443}
+    volumes:
+      # 放 fullchain.pem 与 privkey.pem 即启用 HTTPS
+      - ${SSL_CERT_DIR:-./deploy/certs}:/etc/nginx/certs:ro
+
+  minio:
+    image: minio/minio:latest
+    profiles: ["minio"]
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-zhiflow}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-}
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - miniodata:/data
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.15
+    profiles: ["search"]
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-}
+      MEILI_ENV: production
+    volumes:
+      - meilidata:/meili_data
+
+volumes:
+  pgdata:
+  valkeydata:
+  appdata:
+  miniodata:
+  meilidata:

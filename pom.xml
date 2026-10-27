@@ -1,0 +1,699 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.zhiflow</groupId>
+	<artifactId>zhiflow-pro</artifactId>
+	<version>1.0.5</version>
+	<name>${project.artifactId}</name>
+	<packaging>pom</packaging>
+	<organization>
+		<name>GaiPharma Inc.</name>
+		<url>https://www.gaipharma.com</url>
+	</organization>
+
+	<properties>
+		<spring-boot.version>4.1.1</spring-boot.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<java.version>25</java.version>
+		<!-- spring-security-oauth2-authorization-server 的版本交给 spring-boot-dependencies 管理
+		     （Boot 4.1.1 → Spring Security 7.1.1，授权服务器已并入 Security 主线、随 spring-security.version）。此前显式锁 1.5.0 会把 BOM 的补丁版本顶掉，不要加回来。 -->
+		<mybatis-plus.version>3.5.16</mybatis-plus.version>
+		<!-- 对齐 MyBatis-Plus 3.5.16 的 mybatis-plus-jsqlparser 官方绑定（该模块编译期绑 5.2）。
+		     🔴 不要改回 5.0/4.9：5.0 的 WithItem 没有 getSelect()，而 TenantLineInnerInterceptor
+		     的 lambda$processSelect$0 直接调它 ⇒ 任何含 WITH/CTE 的 SQL 必抛 NoSuchMethodError
+		     → 运行时 500，而编译与单测都拦不住（Error 不是 Exception，且不写 CTE 就碰不到）。
+		     护栏：SqlRewriteContractTest（zhiflow-common-data）固化了重写结果，版本再错开会红。 -->
+		<jsqlparser.version>5.2</jsqlparser.version>
+		<hutool.version>5.8.44</hutool.version>
+		<!-- fastjson2 native API migration; old com.alibaba:fastjson is prohibited. -->
+		<fastjson2.version>2.0.63</fastjson2.version>
+		<!-- jsoup 1.23.2：2026-08-26 最新 1.x 稳定版；白名单净化回归见 RichTextSanitizerTest。 -->
+		<jsoup.version>1.23.2</jsoup.version>
+		<poi.version>5.4.1</poi.version>
+		<ttl.version>2.14.5</ttl.version>
+		<weixin-java.version>4.8.0</weixin-java.version>
+		<velocity.version>2.4.1</velocity.version>
+
+		<minio.version>8.6.0</minio.version>
+		<aliyun-java-sdk-core.version>4.7.8</aliyun-java-sdk-core.version>
+		<alipay.easysdk.version>2.2.3</alipay.easysdk.version>
+		<redisson.version>4.7.0</redisson.version>
+		<getui.version>1.0.7.0</getui.version>
+		<aspectj.version>1.9.25.1</aspectj.version>
+		<swagger.version>2.2.41</swagger.version>
+		<nginxparser.version>0.9.6</nginxparser.version>
+		<postgresql.version>42.7.8</postgresql.version>
+		<meilisearch.version>0.17.1</meilisearch.version>
+		<gson.version>2.11.0</gson.version>
+		<commons-io.version>2.17.0</commons-io.version>
+		<oshi.version>6.9.2</oshi.version>
+		<springdoc.version>3.1.1</springdoc.version>
+		<tianai-captcha.version>1.5.2</tianai-captcha.version>
+		<lombok.version>1.18.46</lombok.version>
+		<ip2region.version>3.3.7</ip2region.version>
+		<!-- JAXB (Java 21 已移除，腾讯云 SDK 需要) -->
+		<jaxb.version>4.0.5</jaxb.version>
+		<!-- Flyway：mall 多租户迁移执行器（与 zhiflow-im 侧版本保持一致；11.20.x 起 PG18 已 Verified；12.x 大版本另评审） -->
+		<flyway.version>11.20.3</flyway.version>
+		<!-- OkHttp / Okio：minio、腾讯云等 SDK 各自传递不同版本的 okhttp 与 okio，混用会在运行期报 NoSuchMethodError，
+		     这里统一钉住（okhttp 5 对 4.x 消费者二进制兼容）。okhttp-bom 必须是第一个导入的 BOM（同一 artifact 以先声明的 BOM 为准）。 -->
+		<okhttp.version>5.2.1</okhttp.version>
+		<okio.version>3.16.1</okio.version>
+		<!-- 随机 Bean 生成，仅 zhiflow-common-test 使用 -->
+		<podam.version>8.0.2.RELEASE</podam.version>
+		<!-- 真库测试容器，仅 zhiflow-common-test 的方言验证使用 -->
+		<testcontainers.version>2.0.5</testcontainers.version>
+	</properties>
+
+	<dependencies>
+		<!--Lombok-->
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>${lombok.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<!--测试依赖-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- 以下依赖标记 optional=true：子模块可编译但不传递到消费者 -->
+		<!--监控（HealthIndicator 等）-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.aspectj</groupId>
+			<artifactId>aspectjweaver</artifactId>
+			<version>${aspectj.version}</version>
+			<optional>true</optional>
+		</dependency>
+	</dependencies>
+
+	<modules>
+		<module>zhiflow-api</module>
+		<module>zhiflow-auth</module>
+		<module>zhiflow-upms</module>
+		<module>zhiflow-common</module>
+		<module>zhiflow-weixin</module>
+		<module>zhiflow-mall</module>
+		<module>zhiflow-pay</module>
+		<module>zhiflow-boot</module>
+		<module>zhiflow-arch-test</module>
+	</modules>
+
+	<dependencyManagement>
+		<dependencies>
+			<!-- 见 properties 里 okhttp.version 的说明：必须是第一个导入的 BOM -->
+			<dependency>
+				<groupId>com.squareup.okhttp3</groupId>
+				<artifactId>okhttp-bom</artifactId>
+				<version>${okhttp.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.squareup.okio</groupId>
+				<artifactId>okio</artifactId>
+				<version>${okio.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.squareup.okio</groupId>
+				<artifactId>okio-jvm</artifactId>
+				<version>${okio.version}</version>
+			</dependency>
+			<!-- 工具包-->
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-common-core</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-common-data</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-common-log</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-common-security</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-common-swagger</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<!--文件存储-->
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-common-storage</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<!--sms-->
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-common-sms</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<!-- portal门户 -->
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-common-portal</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<!--job-->
+			<!--	meiliSearch		-->
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-common-search</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<!-- IP地理位置离线查询 -->
+			<dependency>
+				<groupId>org.lionsoul</groupId>
+				<artifactId>ip2region</artifactId>
+				<version>${ip2region.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-upms-common</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-weixin-common</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-mall-common</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-pay-common</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<!-- API 接口定义模块 -->
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-api-upms</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-api-weixin</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-api-mall-api</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-api-pay</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-dependencies</artifactId>
+				<version>${spring-boot.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<!-- spring-security-oauth2-authorization-server 不在此声明：
+			     spring-boot-dependencies 已管理它（Boot 4.1.1 → Spring Security 7.1.1，授权服务器随 Security 主线版本）。
+			     本地留一条无版本的管理项会遮蔽 BOM，导致版本解析失败。 -->
+			<!-- fastjson2 replaces the unsupported com.alibaba:fastjson 1.x artifact. -->
+			<dependency>
+				<groupId>com.alibaba.fastjson2</groupId>
+				<artifactId>fastjson2</artifactId>
+				<version>${fastjson2.version}</version>
+			</dependency>
+			<!--代码生成引擎-->
+			<dependency>
+				<groupId>org.apache.velocity</groupId>
+				<artifactId>velocity-engine-core</artifactId>
+				<version>${velocity.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.baomidou</groupId>
+				<artifactId>mybatis-plus-extension</artifactId>
+				<version>${mybatis-plus.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.baomidou</groupId>
+				<artifactId>mybatis-plus-annotation</artifactId>
+				<version>${mybatis-plus.version}</version>
+			</dependency>
+			<!--mybatis-->
+			<dependency>
+				<groupId>com.baomidou</groupId>
+				<artifactId>mybatis-plus-spring-boot4-starter</artifactId>
+				<version>${mybatis-plus.version}</version>
+			</dependency>
+			<!--mybatis-plus-jsqlparser 3.5.9+ 必需的分页和租户功能包-->
+			<dependency>
+				<groupId>com.baomidou</groupId>
+				<artifactId>mybatis-plus-jsqlparser</artifactId>
+				<version>${mybatis-plus.version}</version>
+			</dependency>
+			<!--jsqlparser SQL解析器 (MyBatis-Plus 需要)-->
+			<dependency>
+				<groupId>com.github.jsqlparser</groupId>
+				<artifactId>jsqlparser</artifactId>
+				<version>${jsqlparser.version}</version>
+			</dependency>
+			<!--mybatis plus多数据源-->
+			<!--swagger -->
+			<dependency>
+				<groupId>io.swagger.core.v3</groupId>
+				<artifactId>swagger-annotations</artifactId>
+				<version>${swagger.version}</version>
+			</dependency>
+			<!--weixin-java-common-->
+			<dependency>
+				<groupId>com.github.binarywang</groupId>
+				<artifactId>weixin-java-common</artifactId>
+				<version>${weixin-java.version}</version>
+			</dependency>
+			<!--weixin-java-admin-->
+			<dependency>
+				<groupId>com.github.binarywang</groupId>
+				<artifactId>weixin-java-mp</artifactId>
+				<version>${weixin-java.version}</version>
+			</dependency>
+			<!--weixin-java-open-->
+			<dependency>
+				<groupId>com.github.binarywang</groupId>
+				<artifactId>weixin-java-open</artifactId>
+				<version>${weixin-java.version}</version>
+			</dependency>
+			<!--weixin-java-miniapp-->
+			<dependency>
+				<groupId>com.github.binarywang</groupId>
+				<artifactId>weixin-java-miniapp</artifactId>
+				<version>${weixin-java.version}</version>
+			</dependency>
+			<!--weixin-java-pay-->
+			<dependency>
+				<groupId>com.github.binarywang</groupId>
+				<artifactId>weixin-java-pay</artifactId>
+				<version>${weixin-java.version}</version>
+			</dependency>
+
+
+			<!--aliyun-java-sdk-core-->
+			<dependency>
+				<groupId>com.aliyun</groupId>
+				<artifactId>aliyun-java-sdk-core</artifactId>
+				<version>${aliyun-java-sdk-core.version}</version>
+			</dependency>
+			<!--hutool-->
+			<dependency>
+				<groupId>cn.hutool</groupId>
+				<artifactId>hutool-all</artifactId>
+				<version>${hutool.version}</version>
+			</dependency>
+			<!--jsoup 富文本白名单净化-->
+			<dependency>
+				<groupId>org.jsoup</groupId>
+				<artifactId>jsoup</artifactId>
+				<version>${jsoup.version}</version>
+			</dependency>
+			<!--Excel 读写（商品批量导入的模板生成与解析）-->
+			<dependency>
+				<groupId>org.apache.poi</groupId>
+				<artifactId>poi-ooxml</artifactId>
+				<version>${poi.version}</version>
+			</dependency>
+			<!--TTL-->
+			<dependency>
+				<groupId>com.alibaba</groupId>
+				<artifactId>transmittable-thread-local</artifactId>
+				<version>${ttl.version}</version>
+			</dependency>
+			<!--验证码-->
+			<dependency>
+				<groupId>cloud.tianai.captcha</groupId>
+				<artifactId>tianai-captcha-springboot-starter</artifactId>
+				<version>${tianai-captcha.version}</version>
+			</dependency>
+			<!--minio-->
+			<dependency>
+				<groupId>io.minio</groupId>
+				<artifactId>minio</artifactId>
+				<version>${minio.version}</version>
+			</dependency>
+			<!--xxl job-->
+			<!-- https://mvnrepository.com/artifact/com.alipay.sdk/alipay-easysdk -->
+			<dependency>
+				<groupId>com.alipay.sdk</groupId>
+				<artifactId>alipay-easysdk</artifactId>
+				<version>${alipay.easysdk.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.redisson</groupId>
+				<artifactId>redisson-spring-data-41</artifactId>
+				<version>${redisson.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.zhiflow</groupId>
+				<artifactId>zhiflow-common-lock</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.getui.push</groupId>
+				<artifactId>restful-sdk</artifactId>
+				<version>${getui.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.github.odiszapc</groupId>
+				<artifactId>nginxparser</artifactId>
+				<version>${nginxparser.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.postgresql</groupId>
+				<artifactId>postgresql</artifactId>
+				<version>${postgresql.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.meilisearch.sdk</groupId>
+				<artifactId>meilisearch-java</artifactId>
+				<version>${meilisearch.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.google.code.gson</groupId>
+				<artifactId>gson</artifactId>
+				<version>${gson.version}</version>
+			</dependency>
+			<!-- Apache Commons IO -->
+			<dependency>
+				<groupId>commons-io</groupId>
+				<artifactId>commons-io</artifactId>
+				<version>${commons-io.version}</version>
+			</dependency>
+			<!-- OSHI - System and Hardware Information -->
+			<dependency>
+				<groupId>com.github.oshi</groupId>
+				<artifactId>oshi-core</artifactId>
+				<version>${oshi.version}</version>
+			</dependency>
+			<!-- springdoc 3.x（Boot 4）；knife4j 无 Boot 4 版本，已移除 -->
+			<dependency>
+				<groupId>org.springdoc</groupId>
+				<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+				<version>${springdoc.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.aspectj</groupId>
+				<artifactId>aspectjweaver</artifactId>
+				<version>${aspectj.version}</version>
+			</dependency>
+			<!-- JAXB (Java 21 移除，腾讯云 SDK 等需要) -->
+			<dependency>
+				<groupId>jakarta.xml.bind</groupId>
+				<artifactId>jakarta.xml.bind-api</artifactId>
+				<version>${jaxb.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.glassfish.jaxb</groupId>
+				<artifactId>jaxb-runtime</artifactId>
+				<version>${jaxb.version}</version>
+			</dependency>
+			<!-- Flyway（mall 多租户迁移执行器） -->
+			<dependency>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-core</artifactId>
+				<version>${flyway.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-database-postgresql</artifactId>
+				<version>${flyway.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<finalName>${project.artifactId}</finalName>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+			</resource>
+		</resources>
+		<pluginManagement>
+			<plugins>
+			<plugin>
+				<artifactId>maven-clean-plugin</artifactId>
+				<version>3.4.0</version>
+			</plugin>
+			<plugin>
+				<artifactId>maven-install-plugin</artifactId>
+				<version>3.1.3</version>
+			</plugin>
+			<plugin>
+				<artifactId>maven-site-plugin</artifactId>
+				<version>3.20.0</version>
+			</plugin>
+			<plugin>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>3.1.3</version>
+			</plugin>
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.4.2</version>
+			</plugin>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${spring-boot.version}</version>
+				<configuration>
+					<!-- 可执行 fat jar 带 classifier，主产物回到**普通库 jar**。
+					     不加的话 repackage 会把主 jar 原地换成 fat jar（class 落在 BOOT-INF/classes），
+					     于是 zhiflow-boot 无法把 8 个服务当 Maven 依赖用 —— 阶段 3 的装配无从谈起。
+					     产物名是 dist/<artifactId>-exec.jar。 -->
+					<classifier>exec</classifier>
+					<!-- ⚠️ Boot 4 的 spring-boot-maven-plugin 把 includeOptional 默认值从 true 改成 false（3.5.16 → 4.0.8 的 plugin.xml 实查）。
+					     本仓根 pom 里 actuator / aspectjweaver 都标了 optional=true（jasypt / admin-client 已于 2026-09-25 清理），
+					     默认值一变这几组 jar 就从所有 fat jar 里消失——单体会因此起不来（HealthIndicator 类不存在）。
+					     显式钉回 true，保持与 Boot 3 时代完全一致的打包内容。 -->
+					<includeOptional>true</includeOptional>
+					<outputDirectory>${maven.multiModuleProjectDirectory}/dist</outputDirectory>
+					<excludes>
+						<exclude>
+							<groupId>org.springframework.boot</groupId>
+							<artifactId>spring-boot-devtools</artifactId>
+						</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<execution>
+						<id>repackage</id>
+						<phase>none</phase>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>io.fabric8</groupId>
+				<artifactId>docker-maven-plugin</artifactId>
+				<version>0.45.1</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.15.0</version>
+				<configuration>
+					<!-- JDK23+ 默认 -proc:none(仅 processor-path 时不跑注解处理)，须显式 full 才会运行 lombok -->
+					<proc>full</proc>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>3.5.0</version>
+				<executions>
+					<execution>
+						<id>enforce-versions</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireJavaVersion>
+									<version>[25,)</version>
+								</requireJavaVersion>
+								<requireMavenVersion>
+									<version>[3.9,)</version>
+								</requireMavenVersion>
+								<banDuplicatePomDependencyVersions/>
+								<bannedDependencies>
+									<excludes>
+										<exclude>log4j:log4j</exclude>
+										<exclude>javax.servlet:servlet-api</exclude>
+										<exclude>javax.servlet:javax.servlet-api</exclude>
+									</excludes>
+								</bannedDependencies>
+								<requirePluginVersions>
+									<message>所有 Maven 插件都必须显式指定版本</message>
+								</requirePluginVersions>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.15.0</version>
+				<configuration>
+					<release>${java.version}</release>
+					<encoding>UTF-8</encoding>
+					<parameters>true</parameters>
+					<!-- JDK23+ 默认 -proc:none(仅 processor-path 时不跑注解处理)，须显式 full 才会运行 lombok -->
+					<proc>full</proc>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
+						</path>
+						<path>
+							<groupId>org.springframework.boot</groupId>
+							<artifactId>spring-boot-configuration-processor</artifactId>
+							<version>${spring-boot.version}</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.5.5</version>
+				<configuration>
+					<argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED --add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/jdk.internal.reflect=ALL-UNNAMED -Dnet.bytebuddy.experimental=true</argLine>
+					<failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>io.github.git-commit-id</groupId>
+				<artifactId>git-commit-id-maven-plugin</artifactId>
+				<version>9.0.1</version>
+				<executions>
+					<execution>
+						<id>get-the-git-infos</id>
+						<goals>
+							<goal>revision</goal>
+						</goals>
+						<phase>initialize</phase>
+					</execution>
+				</executions>
+				<configuration>
+					<generateGitPropertiesFile>true</generateGitPropertiesFile>
+					<generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+					<includeOnlyProperties>
+						<includeOnlyProperty>^git.branch$</includeOnlyProperty>
+						<includeOnlyProperty>^git.commit.id$</includeOnlyProperty>
+						<includeOnlyProperty>^git.commit.id.abbrev$</includeOnlyProperty>
+						<includeOnlyProperty>^git.commit.time$</includeOnlyProperty>
+						<includeOnlyProperty>^git.commit.user.name$</includeOnlyProperty>
+						<includeOnlyProperty>^git.dirty$</includeOnlyProperty>
+						<includeOnlyProperty>^git.build.time$</includeOnlyProperty>
+						<includeOnlyProperty>^git.build.version$</includeOnlyProperty>
+					</includeOnlyProperties>
+					<commitIdGenerationMode>full</commitIdGenerationMode>
+					<failOnNoGitDirectory>false</failOnNoGitDirectory>
+					<failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
+					<skipPoms>true</skipPoms>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.4.0</version>
+				<configuration>
+					<nonFilteredFileExtensions>
+						<nonFilteredFileExtension>p12</nonFilteredFileExtension>
+						<nonFilteredFileExtension>pfx</nonFilteredFileExtension>
+						<nonFilteredFileExtension>jks</nonFilteredFileExtension>
+						<nonFilteredFileExtension>keystore</nonFilteredFileExtension>
+						<nonFilteredFileExtension>crt</nonFilteredFileExtension>
+						<nonFilteredFileExtension>pem</nonFilteredFileExtension>
+						<nonFilteredFileExtension>png</nonFilteredFileExtension>
+						<nonFilteredFileExtension>jpg</nonFilteredFileExtension>
+						<nonFilteredFileExtension>gif</nonFilteredFileExtension>
+						<nonFilteredFileExtension>xlsx</nonFilteredFileExtension>
+						<nonFilteredFileExtension>xls</nonFilteredFileExtension>
+						<nonFilteredFileExtension>docx</nonFilteredFileExtension>
+						<nonFilteredFileExtension>pdf</nonFilteredFileExtension>
+						<nonFilteredFileExtension>xml</nonFilteredFileExtension>
+					</nonFilteredFileExtensions>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>
+		<!--
+			requireUpperBoundDeps 报告：传递依赖被 Maven 的「最近者优先」降级到比某条依赖路径要求的更低版本时报出，
+			这类降级是运行期 NoSuchMethodError 的常见来源。
+
+			放进 profile 而不挂默认生命周期：报告是整棵依赖树的 dump，日常构建不需要，挂上会淹没真正的告警。
+			fail=false：只报告不拦。
+
+			用法：./mvnw -B -ntp validate -Pdeps-report
+		-->
+		<profile>
+			<id>deps-report</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-enforcer-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>enforce-upper-bound-deps-report</id>
+								<goals>
+									<goal>enforce</goal>
+								</goals>
+								<configuration>
+									<fail>false</fail>
+									<rules>
+										<requireUpperBoundDeps/>
+									</rules>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+</project>

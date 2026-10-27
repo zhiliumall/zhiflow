@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (C) 2025 gaipharma.com
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zhiflow.mall.api.mapper.CardSpecMapper">
+
+	<!-- 批量查询每个 SPU 的代表规格文案:取最低价 SKU,把其规格值按 sort 拼成 "7.5mg×2支" -->
+	<select id="selectSellSpecBySpuIds" resultType="java.util.HashMap">
+		SELECT spu_id, spec_text FROM (
+			SELECT
+				ssv.spu_id AS spu_id,
+				string_agg(gsv.name, '×' ORDER BY ssv.sort ASC) AS spec_text,
+				row_number() OVER (
+					PARTITION BY ssv.spu_id
+					ORDER BY sk.sales_price ASC NULLS LAST, ssv.sku_id ASC
+				) AS rn
+			FROM goods_sku_spec_value ssv
+			INNER JOIN goods_sku sk ON sk.id = ssv.sku_id AND sk.del_flag = '0'
+			LEFT JOIN goods_spec_value gsv ON gsv.id = ssv.spec_value_id
+			WHERE ssv.spu_id IN
+			<foreach collection="spuIds" item="id" open="(" separator="," close=")">
+				#{id}
+			</foreach>
+			GROUP BY ssv.spu_id, ssv.sku_id, sk.sales_price
+		) t
+		WHERE t.rn = 1
+	</select>
+</mapper>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.zhiflow</groupId>
+		<artifactId>zhiflow-pro</artifactId>
+		<version>1.0.5</version>
+	</parent>
+
+	<artifactId>zhiflow-common</artifactId>
+	<packaging>pom</packaging>
+
+	<description>公共聚合模块</description>
+
+	<modules>
+		<module>zhiflow-common-core</module>
+		<module>zhiflow-common-data</module>
+		<module>zhiflow-common-log</module>
+		<module>zhiflow-common-security</module>
+		<module>zhiflow-common-swagger</module>
+		<module>zhiflow-common-storage</module>
+		<module>zhiflow-common-sms</module>
+
+		<module>zhiflow-common-portal</module>
+		<module>zhiflow-common-search</module>
+		<module>zhiflow-common-lock</module>
+		<module>zhiflow-common-test</module>
+	</modules>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+	</dependencies>
+</project>

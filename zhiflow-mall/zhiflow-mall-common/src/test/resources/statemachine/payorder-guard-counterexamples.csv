@@ -1,0 +1,11 @@
+rule|status|event|operator|otherPaid|expected
+P2 渠道不能报下单成功|CREATED|CHANNEL_ORDERED|CHANNEL|-|不能触发
+P3 渠道回调不能报拒绝下单|CREATED|CHANNEL_REJECTED|CHANNEL|-|不能触发
+P4 未判定是否已有已付单|PAYING|PAY_CONFIRMED|CHANNEL|-|未判定同业务单
+P4 同业务单已有另一张已付单|PAYING|PAY_CONFIRMED|CHANNEL|true|应走 P9
+P4 买家不能确认收款|PAYING|PAY_CONFIRMED|USER|false|不能触发
+P5 买家不能报渠道失败|PAYING|CHANNEL_FAILED|USER|-|不能触发
+P6 渠道不能关单|PAYING|ORDER_CLOSED|CHANNEL|-|不能触发
+P7 后台不能凭空记迟到到账|CANCELLED|LATE_PAY_CONFIRMED|ADMIN|false|不能触发
+P9 同业务单没有别的已付单|CANCELLED|DUPLICATE_PAY_CONFIRMED|CHANNEL|false|应走 P4 / P7
+P9 未判定是否已有已付单|PAYING|DUPLICATE_PAY_CONFIRMED|CHANNEL|-|未判定同业务单

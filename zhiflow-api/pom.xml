@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.zhiflow</groupId>
+		<artifactId>zhiflow-pro</artifactId>
+		<version>1.0.5</version>
+	</parent>
+
+	<artifactId>zhiflow-api</artifactId>
+	<packaging>pom</packaging>
+
+	<description>微服务 API 接口定义父模块 - 用于服务间调用接口解耦</description>
+
+	<modules>
+		<module>zhiflow-api-upms</module>
+		<module>zhiflow-api-weixin</module>
+		<module>zhiflow-api-mall-api</module>
+		<module>zhiflow-api-pay</module>
+	</modules>
+
+	<dependencies>
+		<!-- Spring Web 注解支持 (@HttpExchange 等) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc</artifactId>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
+</project>

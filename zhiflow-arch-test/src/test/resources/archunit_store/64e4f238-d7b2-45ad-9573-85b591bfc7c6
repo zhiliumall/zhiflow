@@ -1,0 +1,1 @@
+com.zhiflow.mall.admin.service.impl.GoodsSpuServiceImpl.saveHanddler(com.zhiflow.mall.common.entity.GoodsSpu) 跨表写但无 @Transactional

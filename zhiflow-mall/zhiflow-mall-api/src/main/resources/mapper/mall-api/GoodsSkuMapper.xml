@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (C) 2025 gaipharma.com
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zhiflow.mall.api.mapper.GoodsSkuMapper">
+
+	<resultMap id="goodsSkuMap" type="com.zhiflow.mall.common.entity.GoodsSku">
+		<id property="id" column="id"/>
+		<result property="createTime" column="create_time"/>
+		<result property="updateTime" column="update_time"/>
+		<result property="tenantId" column="tenant_id"/>
+		<result property="shopId" column="shop_id"/>
+		<result property="skuCode" column="sku_code"/>
+		<result property="spuId" column="spu_id"/>
+		<result property="picUrl" column="pic_url" jdbcType="VARCHAR"/>
+		<result property="salesPrice" column="sales_price"/>
+		<result property="marketPrice" column="market_price"/>
+		<result property="costPrice" column="cost_price"/>
+		<result property="stock" column="stock"/>
+		<result property="weight" column="weight"/>
+		<result property="volume" column="volume"/>
+		<result property="delFlag" column="del_flag"/>
+		<result property="enable" column="enable"/>
+		<result property="version" column="version"/>
+	</resultMap>
+
+	<!--
+	  下单专用：goods_spu 随 SKU 一次 LEFT JOIN 取回，不再每个 SKU 嵌套 GoodsSpuMapper.selectById（10-22 下单链路清理，原来每单多 N 次往返）。
+	  列集合 = GoodsSpu 实体全部物理列（含 TenantEntity / BaseEntity 四列）减 description：下单路径不读商品详情 HTML，
+	  它是 goods_spu 最大的一列。逐列显式映射，三个数组列与 GoodsSpu 实体一样走 ArrayStringTypeHandler。
+	  ⚠️ 前缀不能用 spu_：goods_sku 自己就有 spu_id 列，SPU 主键会和它撞成同名列（MyBatis 取第一个，即 SKU 的 spu_id）。
+	  LEFT JOIN + ON 里的 del_flag：SPU 软删或不存在时 goodsSpu 为 null，与嵌套 selectById（@TableLogic）返回 null 的语义一致，
+	  调用方按 goodsSpu == null 拒单。notNullColumn="id" 不能省：ArrayStringTypeHandler 把 NULL 读成空数组，
+	  没有它 MyBatis 会给不存在的 SPU 造一个全空对象。tenant_id 两张表都由租户插件注入（JOIN 的 ON 里同样追加）。
+	  真库对照见 GoodsSkuOrderSubJoinPgTest。
+	-->
+	<resultMap id="goodsSkuMapOrderSub" extends="goodsSkuMap" type="com.zhiflow.mall.common.entity.GoodsSku">
+		<association property="goodsSpu" javaType="com.zhiflow.mall.common.entity.GoodsSpu"
+					 columnPrefix="gspu_" notNullColumn="id">
+			<id property="id" column="id"/>
+			<result property="tenantId" column="tenant_id"/>
+			<result property="delFlag" column="del_flag"/>
+			<result property="createTime" column="create_time"/>
+			<result property="updateTime" column="update_time"/>
+			<result property="shopId" column="shop_id"/>
+			<result property="spuCode" column="spu_code"/>
+			<result property="name" column="name"/>
+			<result property="sellPoint" column="sell_point"/>
+			<result property="categoryFirst" column="category_first"/>
+			<result property="categorySecond" column="category_second"/>
+			<result property="categoryThird" column="category_third"/>
+			<result property="videoUrl" column="video_url"/>
+			<result property="picUrls" column="pic_urls" typeHandler="com.zhiflow.common.core.mybatis.typehandler.ArrayStringTypeHandler" jdbcType="VARCHAR"/>
+			<result property="shelf" column="shelf"/>
+			<result property="sort" column="sort"/>
+			<result property="priceDown" column="price_down"/>
+			<result property="priceUp" column="price_up"/>
+			<result property="saleNum" column="sale_num"/>
+			<result property="specType" column="spec_type"/>
+			<result property="freightType" column="freight_type"/>
+			<result property="freightAmount" column="freight_amount"/>
+			<result property="verifyStatus" column="verify_status"/>
+			<result property="brandId" column="brand_id"/>
+			<result property="viewNum" column="view_num"/>
+			<result property="stockWarnLine" column="stock_warn_line"/>
+			<result property="label" column="label" typeHandler="com.zhiflow.common.core.mybatis.typehandler.ArrayStringTypeHandler" jdbcType="VARCHAR"/>
+			<result property="platform" column="platform" typeHandler="com.zhiflow.common.core.mybatis.typehandler.ArrayStringTypeHandler" jdbcType="VARCHAR"/>
+			<result property="parameterJson" column="parameter_json"/>
+		</association>
+	</resultMap>
+
+	<sql id="goodsSpuJoinCols">
+		spu.id AS gspu_id,
+		spu.tenant_id AS gspu_tenant_id,
+		spu.del_flag AS gspu_del_flag,
+		spu.create_time AS gspu_create_time,
+		spu.update_time AS gspu_update_time,
+		spu.shop_id AS gspu_shop_id,
+		spu.spu_code AS gspu_spu_code,
+		spu.name AS gspu_name,
+		spu.sell_point AS gspu_sell_point,
+		spu.category_first AS gspu_category_first,
+		spu.category_second AS gspu_category_second,
+		spu.category_third AS gspu_category_third,
+		spu.video_url AS gspu_video_url,
+		spu.pic_urls AS gspu_pic_urls,
+		spu.shelf AS gspu_shelf,
+		spu.sort AS gspu_sort,
+		spu.price_down AS gspu_price_down,
+		spu.price_up AS gspu_price_up,
+		spu.sale_num AS gspu_sale_num,
+		spu.spec_type AS gspu_spec_type,
+		spu.freight_type AS gspu_freight_type,
+		spu.freight_amount AS gspu_freight_amount,
+		spu.verify_status AS gspu_verify_status,
+		spu.brand_id AS gspu_brand_id,
+		spu.view_num AS gspu_view_num,
+		spu.stock_warn_line AS gspu_stock_warn_line,
+		spu.label AS gspu_label,
+		spu.platform AS gspu_platform,
+		spu.parameter_json AS gspu_parameter_json
+	</sql>
+
+	<sql id="goodsSkuSql">
+		sku.id,
+		sku.create_time,
+		sku.update_time,
+		sku.tenant_id,
+		sku.shop_id,
+		sku.sku_code,
+		sku.spu_id,
+		sku.pic_url,
+		sku.sales_price,
+		sku.market_price,
+		sku.cost_price,
+		sku.stock,
+		sku.weight,
+		sku.volume,
+		sku.del_flag,
+		sku.enable,
+		sku.version
+	</sql>
+
+	<!-- 商品详情的在售 SKU：不取成本价（用户端不能看），也不取库存、版本号（每单都变，另走 5 秒的库存缓存） -->
+	<select id="listDetailSkuBySpuId" resultMap="goodsSkuMap">
+		SELECT
+			sku.id,
+			sku.create_time,
+			sku.update_time,
+			sku.tenant_id,
+			sku.shop_id,
+			sku.sku_code,
+			sku.spu_id,
+			sku.pic_url,
+			sku.sales_price,
+			sku.market_price,
+			sku.weight,
+			sku.volume,
+			sku.del_flag,
+			sku.enable
+		FROM
+		goods_sku sku
+		WHERE sku.spu_id = #{spuId}
+		AND sku.enable = '1'
+		<!-- 手写 XML 不走 @TableLogic，软删的 sku 要自己挡；目前墓碑恰好都是 enable=0，别依赖这个巧合 -->
+		AND sku.del_flag = '0'
+	</select>
+
+	<select id="selectOneByShoppingCart" resultMap="goodsSkuMap">
+		SELECT
+		<include refid="goodsSkuSql"/>
+		FROM
+		goods_sku sku
+		WHERE sku.enable = '1'
+			AND sku.id = #{id}
+	</select>
+
+	<select id="listSkuInOrderSub" resultMap="goodsSkuMapOrderSub">
+		<foreach item="item" collection="listPlaceOrderSkuDTO" separator="UNION ALL">
+			SELECT
+			<include refid="goodsSkuSql"/>,
+			<include refid="goodsSpuJoinCols"/>
+			FROM
+			goods_sku sku
+			LEFT JOIN goods_spu spu ON spu.id = sku.spu_id AND spu.del_flag = '0'
+			WHERE sku.enable = '1'
+			AND sku.shop_id = #{shopId}
+			AND sku.id = #{item.skuId}
+			AND sku.spu_id = #{item.spuId}
+			AND sku.stock >= #{item.quantity}
+		</foreach>
+	</select>
+</mapper>

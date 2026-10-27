@@ -1,0 +1,11 @@
+.git
+**/target
+dist
+data
+logs
+**/logs
+**/node_modules
+.idea
+*.iml
+.env
+deploy/certs

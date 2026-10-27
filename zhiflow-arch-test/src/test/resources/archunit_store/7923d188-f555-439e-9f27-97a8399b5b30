@@ -1,0 +1,4 @@
+com.zhiflow.upms.admin.controller.AgreementConfigController.save(com.zhiflow.upms.common.entity.AgreementConfig) 吞掉异常后返回失败响应，但未调用 ErrorLogRecorder.record
+com.zhiflow.weixin.admin.controller.WxUserController.bindOpenIdMp(com.zhiflow.weixin.common.dto.LoginDTO) 吞掉异常后返回失败响应，但未调用 ErrorLogRecorder.record
+com.zhiflow.weixin.admin.controller.WxUserController.code2WxUserMp(com.zhiflow.weixin.common.dto.LoginDTO) 吞掉异常后返回失败响应，但未调用 ErrorLogRecorder.record
+com.zhiflow.weixin.admin.controller.WxUserController.wxUserMp(com.zhiflow.weixin.common.dto.LoginDTO) 吞掉异常后返回失败响应，但未调用 ErrorLogRecorder.record

@@ -1,0 +1,8 @@
+com.zhiflow.common.core.config.JacksonConfig
+com.zhiflow.common.core.config.MessageSourceConfig
+com.zhiflow.common.core.util.SpringContextHolder
+com.zhiflow.common.core.config.HomeDirConfigProperties
+com.zhiflow.common.core.config.HashidsAutoConfiguration
+com.zhiflow.common.core.captcha.CaptchaCacheStoreAutoConfiguration
+com.zhiflow.common.core.observability.ObservabilityAutoConfiguration
+com.zhiflow.common.core.config.ClientIpSwitchAutoConfiguration

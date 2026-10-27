@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (C) 2025 gaipharma.com
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zhiflow.weixin.admin.mapper.WxUserMapper">
+
+	<!--新增指定租户的表-->
+	<select id="createTenantDataBaseTables">
+		<!--复制分表的表-->
+		<!-- ⚠️ 只建缺的分表，绝不 DROP（2026-09-26）：upms 的 POST /tenant/database/init/{id} 补偿会调到这里，
+		     旧写法 DROP ... CASCADE 会把存量租户的粉丝表、消息表整张清空。 -->
+		<foreach item="item" collection="dataBaseTables" separator="">
+			CREATE TABLE IF NOT EXISTS ${item}_${tenantId} (LIKE ${item} INCLUDING ALL);
+		</foreach>
+	</select>
+</mapper>

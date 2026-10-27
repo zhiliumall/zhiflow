@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+		 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.zhiflow</groupId>
+		<artifactId>zhiflow-common</artifactId>
+		<version>1.0.5</version>
+	</parent>
+
+	<artifactId>zhiflow-common-test</artifactId>
+	<packaging>jar</packaging>
+	<description>单元测试基建：测试基类、MyBatis-Plus 测试支持、随机对象生成、Bean 断言</description>
+
+	<!--
+		本模块的类都在 src/main/java 且依赖是 compile scope —— 它本身就是给别人当测试依赖用的，
+		消费方以 <scope>test</scope> 引入即可拿到 junit/mockito。
+		不要把这些依赖塞进 common-core：那会让 podam 之类只在测试期需要的东西
+		进入所有服务的运行时 classpath。
+	-->
+	<dependencies>
+		<!-- 覆盖父 pom 里 test scope 的同名依赖：本模块要在 main 里用 junit/mockito/assertj -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>compile</scope>
+		</dependency>
+
+		<!-- TableInfoHelper / MybatisConfiguration，用于在无容器环境注册实体的 lambda 缓存 -->
+		<dependency>
+			<groupId>com.baomidou</groupId>
+			<artifactId>mybatis-plus-extension</artifactId>
+		</dependency>
+
+		<!-- 随机 Bean 生成（yudao RandomUtils 同款） -->
+		<dependency>
+			<groupId>uk.co.jemos.podam</groupId>
+			<artifactId>podam</artifactId>
+			<version>${podam.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<scope>provided</scope>
+		</dependency>
+
+		<!-- 档 2 方言验证用（test scope，不传递给消费方） -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-postgresql</artifactId>
+			<version>${testcontainers.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+</project>

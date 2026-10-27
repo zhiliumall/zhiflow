@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (C) 2025 gaipharma.com
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zhiflow.mall.api.mapper.GoodsSpuMapper">
+	<resultMap id="goodsSpuMap" type="com.zhiflow.mall.common.entity.GoodsSpu">
+		<id property="id" column="id"/>
+		<result property="tenantId" column="tenant_id"/>
+		<result property="shopId" column="shop_id"/>
+		<result property="spuCode" column="spu_code"/>
+		<result property="name" column="name"/>
+		<result property="sellPoint" column="sell_point"/>
+		<result property="description" column="description"/>
+		<result property="categoryFirst" column="category_first"/>
+		<result property="categorySecond" column="category_second"/>
+		<result property="categoryThird" column="category_third"/>
+		<result property="videoUrl" column="video_url"/>
+		<result property="picUrls" column="pic_urls" typeHandler="com.zhiflow.common.core.mybatis.typehandler.ArrayStringTypeHandler" jdbcType="VARCHAR"/>
+		<result property="shelf" column="shelf"/>
+		<result property="sort" column="sort"/>
+		<result property="priceDown" column="price_down"/>
+		<result property="priceUp" column="price_up"/>
+		<result property="saleNum" column="sale_num"/>
+		<result property="createTime" column="create_time"/>
+		<result property="updateTime" column="update_time"/>
+		<result property="specType" column="spec_type"/>
+		<result property="delFlag" column="del_flag"/>
+		<result property="freightType" column="freight_type"/>
+		<result property="freightAmount" column="freight_amount"/>
+		<result property="verifyStatus" column="verify_status"/>
+		<result property="brandId" column="brand_id"/>
+		<result property="parameterJson" column="parameter_json"/>
+		<result property="viewNum" column="view_num"/>
+	</resultMap>
+
+	<!-- 商品详情的库存销量（GoodsStockSnapshot）：一条 SQL 取商品销量与全部在售 SKU 的库存、版本号 -->
+	<resultMap id="goodsStockMap" type="com.zhiflow.mall.api.cache.GoodsStockSnapshot">
+		<id property="spuId" column="spu_id"/>
+		<result property="saleNum" column="sale_num"/>
+		<collection property="skus" ofType="com.zhiflow.mall.api.cache.GoodsStockSnapshot$SkuStock" notNullColumn="sku_id">
+			<id property="skuId" column="sku_id"/>
+			<result property="stock" column="stock"/>
+			<result property="version" column="version"/>
+		</collection>
+	</resultMap>
+
+	<sql id="goodsSpuSql">
+		goods_spu.id,
+		goods_spu.tenant_id,
+		goods_spu.shop_id,
+		goods_spu.spu_code,
+		goods_spu.name,
+		goods_spu.sell_point,
+		goods_spu.description,
+		goods_spu.category_first,
+		goods_spu.category_second,
+		goods_spu.category_third,
+		goods_spu.video_url,
+		goods_spu.pic_urls,
+		goods_spu.shelf,
+		goods_spu.sort,
+		goods_spu.price_down,
+		goods_spu.price_up,
+		goods_spu.sale_num,
+		goods_spu.create_time,
+		goods_spu.update_time,
+		goods_spu.spec_type,
+		goods_spu.del_flag,
+		goods_spu.freight_type,
+		goods_spu.freight_amount,
+		goods_spu.verify_status,
+		goods_spu.brand_id,
+		goods_spu.label,
+		goods_spu.parameter_json,
+		goods_spu.view_num
+	</sql>
+
+	<sql id="goodsSpuSql2">
+		goods_spu.id,
+		goods_spu.tenant_id,
+		goods_spu.shop_id,
+		goods_spu.spu_code,
+		goods_spu.name,
+		goods_spu.sell_point,
+		null description,
+		goods_spu.category_first,
+		goods_spu.category_second,
+		goods_spu.category_third,
+		goods_spu.video_url,
+		goods_spu.pic_urls,
+		goods_spu.shelf,
+		goods_spu.sort,
+		goods_spu.price_down,
+		goods_spu.price_up,
+		goods_spu.sale_num,
+		goods_spu.create_time,
+		goods_spu.update_time,
+		goods_spu.spec_type,
+		goods_spu.del_flag,
+		goods_spu.freight_type,
+		goods_spu.freight_amount,
+		goods_spu.verify_status,
+		goods_spu.brand_id,
+		goods_spu.label,
+		goods_spu.parameter_json,
+		goods_spu.view_num
+	</sql>
+
+	<!-- 商品详情（不含 SKU；SKU、规格值、规格树各一条批量查询，见 GoodsDetailCache） -->
+	<select id="selectById2" resultMap="goodsSpuMap">
+		SELECT
+			<include refid="goodsSpuSql"/>
+		FROM goods_spu goods_spu
+		WHERE goods_spu.verify_status = '1' AND goods_spu.id = #{id}
+	</select>
+
+	<select id="selectStockBySpuId" resultMap="goodsStockMap">
+		SELECT
+			spu.id AS spu_id,
+			spu.sale_num,
+			sku.id AS sku_id,
+			sku.stock,
+			sku.version
+		FROM goods_spu spu
+		LEFT JOIN goods_sku sku ON sku.spu_id = spu.id AND sku.enable = '1'
+			<!-- 手写 XML 不走 @TableLogic，软删的 sku 要自己挡（与详情的 SKU 查询同一口径） -->
+			AND sku.del_flag = '0'
+		WHERE spu.id = #{spuId}
+	</select>
+
+	<select id="selectOneByShoppingCart" resultMap="goodsSpuMap">
+		SELECT
+			<include refid="goodsSpuSql2"/>
+		FROM goods_spu goods_spu
+		WHERE goods_spu.verify_status = '1' AND goods_spu.id = #{id}
+	</select>
+
+
+</mapper>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (C) 2025 gaipharma.com
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zhiflow.mall.admin.mapper.GoodsSpuSpecMapper">
+
+	<resultMap id="goodsSpecVoMap" type="com.zhiflow.mall.common.vo.GoodsSpecVO">
+		<id property="id" column="spec_id"/>
+		<id property="spuId" column="spu_id"/>
+		<result property="value" column="spec_name"/>
+		<collection property="leaf"
+					select="com.zhiflow.mall.admin.mapper.GoodsSkuSpecValueMapper.selectBySpecId"
+					column="{specId=spec_id,spuId=spu_id}" >
+		</collection>
+	</resultMap>
+
+	<!--
+		手写 XML 不走 @TableLogic，关联表的 del_flag 必须自己带。
+		与 GoodsSkuMapper.listGoodsSkuBySpuId（2026-09-06 修）、EnsureGoodsMapper.listEnsureIdsBySpuId
+		（2026-09-07 修）是同一类：规格树被编辑页回读后原样回传，GoodsSpuServiceImpl 先 remove 当前
+		有效行、再把回传的全量重新落库，漏掉过滤就每保存一次翻一倍。
+		租户 1 实测已中招：goods_spu_spec 有 4 个商品重复（最多 8 行/应 1 行），
+		goods_sku_spec_value 有 11 个 SKU 重复（最狠的一个 2040 行 / 应 2 行）。
+	-->
+	<select id="selectTree" resultMap="goodsSpecVoMap">
+		SELECT
+		  gss.spu_id,
+		  gss.spec_id,
+		  gs.name AS spec_name
+		FROM
+		  goods_spu_spec gss
+		  LEFT JOIN goods_spec gs
+			ON gs.id = gss.spec_id
+		WHERE gss.spu_id = #{spuId}
+		  AND gss.del_flag = '0'
+		ORDER BY gss.sort ASC
+	</select>
+</mapper>

@@ -1,0 +1,31 @@
+# 装配冒烟门禁（AllAssemblySmokeTest）的覆盖配置：叠在主资源的 application.yml 之上，只换外部连接。
+#
+# ⚠️ 纪律：只挡外部网络连接与外部存储，不打桩任何 Spring 装配。主配置里的其余键原样生效，
+# 冒烟验的就是发行出去的那份配置；一旦在这里重述或 mock 装配，这个门禁就退化成假绿。
+#
+# Redis 用本机 6379（RedissonClient 启动即连，挡不掉）；PostgreSQL 换成内存库（门禁验装配，不跑业务 SQL）。
+spring:
+  datasource:
+    url: jdbc:h2:mem:smoke;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+
+mall:
+  # 内存库里没有表，定时任务一跑就是 SQL 错误刷屏；门禁不验任务执行
+  dev:
+    scheduled-tasks-enabled: false
+  # 迁移器要连真实 PostgreSQL 建 schema
+  tenant-migrator:
+    enabled: false
+
+upms:
+  schema-migrator:
+    enabled: false
+  first-boot-password:
+    enabled: false
+
+# 订单号机器位默认要在 public.id_worker_node 上抢占（抢不到就拒绝启动，这是刻意的）。
+# 它是纯 DB 交互、不是装配问题，用它自带的逃生舱退回固定机器位。
+orderno:
+  worker-id-strategy: fixed

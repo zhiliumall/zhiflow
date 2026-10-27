@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (C) 2025 gaipharma.com
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zhiflow.mall.admin.mapper.UserInfoMapper">
+
+	<resultMap id="userInfoMap" type="com.zhiflow.mall.common.entity.UserInfo">
+		<id property="id" column="id"/>
+		<result property="tenantId" column="tenant_id"/>
+		<result property="delFlag" column="del_flag"/>
+		<result property="createTime" column="create_time"/>
+		<result property="updateTime" column="update_time"/>
+		<result property="userCode" column="user_code"/>
+		<result property="phone" column="phone"/>
+		<result property="password" column="password"/>
+		<result property="appType" column="app_type"/>
+		<result property="appId" column="app_id"/>
+		<result property="nickName" column="nick_name"/>
+		<result property="sex" column="sex"/>
+		<result property="headimgUrl" column="headimg_url"/>
+		<result property="city" column="city"/>
+		<result property="country" column="country"/>
+		<result property="province" column="province"/>
+		<result property="address" column="address"/>
+		<result property="version" column="version"/>
+		<result property="blackFlag" column="black_flag"/>
+	</resultMap>
+
+	<sql id="userInfoSql">
+        user_info.id,
+		user_info.tenant_id,
+		user_info.del_flag,
+		user_info.create_time,
+		user_info.update_time,
+		user_info.user_code,
+		user_info.app_type,
+		user_info.app_id,
+		user_info.phone,
+		user_info.password,
+		user_info.nick_name,
+		user_info.sex,
+		user_info.headimg_url,
+		COALESCE(user_info.city,
+			(SELECT ua.city_name
+			 FROM user_address ua
+			 WHERE ua.user_id = user_info.id
+			   AND ua.del_flag = '0'
+			 ORDER BY CASE WHEN ua.is_default = '1' THEN 0 ELSE 1 END,
+			          ua.update_time DESC,
+			          ua.create_time DESC
+			 LIMIT 1)
+		) AS city,
+		user_info.country,
+		COALESCE(user_info.province,
+			(SELECT ua.province_name
+			 FROM user_address ua
+			 WHERE ua.user_id = user_info.id
+			   AND ua.del_flag = '0'
+			 ORDER BY CASE WHEN ua.is_default = '1' THEN 0 ELSE 1 END,
+			          ua.update_time DESC,
+			          ua.create_time DESC
+			 LIMIT 1)
+		) AS province,
+		COALESCE(user_info.address,
+			(SELECT ua.detail_info
+			 FROM user_address ua
+			 WHERE ua.user_id = user_info.id
+			   AND ua.del_flag = '0'
+			 ORDER BY CASE WHEN ua.is_default = '1' THEN 0 ELSE 1 END,
+			          ua.update_time DESC,
+			          ua.create_time DESC
+			 LIMIT 1)
+		) AS address,
+		user_info.version,
+		user_info.black_flag
+    </sql>
+
+	<select id="selectPage1" resultMap="userInfoMap">
+		SELECT
+		<include refid="userInfoSql"/>
+		FROM user_info user_info
+		<where>
+			<!-- 2026-07-25：删除用户从物理删改为软删（S9），此处必须跟着过滤，
+			     否则被删用户仍留在后台列表里，看起来像「删除没生效」。
+			     实测影响：mall_1 列表 1614 → 1609（5 个存量软删用户） -->
+			user_info.del_flag = '0'
+			<if test="query.id != null">
+				AND user_info.id = #{query.id}
+			</if>
+			<if test="query.userCode != null">
+				AND user_info.user_code = #{query.userCode}
+			</if>
+			<if test="query.appType != null">
+				AND user_info.app_type = #{query.appType}
+			</if>
+			<if test="query.appId != null">
+				AND user_info.app_id = #{query.appId}
+			</if>
+			<if test="query.phone != null">
+				AND user_info.phone like '%' || #{query.phone} || '%'
+			</if>
+			<if test="query.keyWord != null">
+				and (user_info.phone like '%' || #{query.keyWord} || '%' or user_info.nick_name like '%' || #{query.keyWord} || '%' or CAST(user_info.user_code AS TEXT) like '%' || #{query.keyWord} || '%')
+			</if>
+			<if test="query.blackFlag != null and query.blackFlag != ''">
+				AND user_info.black_flag = #{query.blackFlag}
+			</if>
+			<if test="query.nickName != null">
+				AND user_info.nick_name like '%' || #{query.nickName} || '%'
+			</if>
+			<if test="query.sex != null">
+				AND user_info.sex = #{query.sex}
+			</if>
+			<if test="query.country != null">
+				AND user_info.country = #{query.country}
+			</if>
+			<if test="query.city != null">
+				AND COALESCE(user_info.city,
+					(SELECT ua.city_name
+					 FROM user_address ua
+					 WHERE ua.user_id = user_info.id
+					   AND ua.del_flag = '0'
+					 ORDER BY CASE WHEN ua.is_default = '1' THEN 0 ELSE 1 END,
+					          ua.update_time DESC,
+					          ua.create_time DESC
+					 LIMIT 1)
+				) = #{query.city}
+			</if>
+			<if test="query.province != null">
+				AND COALESCE(user_info.province,
+					(SELECT ua.province_name
+					 FROM user_address ua
+					 WHERE ua.user_id = user_info.id
+					   AND ua.del_flag = '0'
+					 ORDER BY CASE WHEN ua.is_default = '1' THEN 0 ELSE 1 END,
+					          ua.update_time DESC,
+					          ua.create_time DESC
+					 LIMIT 1)
+				) = #{query.province}
+			</if>
+		</where>
+	</select>
+
+</mapper>

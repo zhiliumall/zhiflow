@@ -1,0 +1,3 @@
+${AnsiColor.BRIGHT_YELLOW}
+ZhiFlow 智流商城 · Copyright (C) 2025 gaipharma.com · AGPL-3.0-only
+${AnsiColor.DEFAULT}
